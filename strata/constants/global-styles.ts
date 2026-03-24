@@ -21,8 +21,8 @@ export const Colors = {
   grey400: 'hsl(0, 0%, 75%)',
   grey600: 'hsl(0, 0%, 40%)',
 
-  dark700: 'hsl(0, 0%, 16%)',
-  dark900: 'hsl(30, 6%, 7%)',
+  secondaryDark: 'hsl(0, 0%, 16%)',
+  primaryDark: 'hsl(30, 6%, 7%)',
 
   gold: 'hsl(53, 80%, 54%)',
 
@@ -45,7 +45,13 @@ export const BorderRadius = {
 };
 
 export const Fonts = {
-  font: 'Manrope',
+  manrope100: 'Manrope100',
+  manrope200: 'Manrope200',
+  manrope300: 'Manrope300',
+  manrope400: 'Manrope400',
+  manrope500: 'Manrope500',
+  manrope600: 'Manrope600',
+  manrope700: 'Manrope700',
 };
 
 export const FontSizes = {
@@ -62,81 +68,77 @@ export const FontSizes = {
 
 export const Typography = StyleSheet.create({
   displayXL: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope700,
     fontSize: FontSizes.displayXL,
-    fontWeight: 700,
     lineHeight: FontSizes.displayXL * 1.2,
   },
   displayL: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope600,
     fontSize: FontSizes.displayL,
-    fontWeight: 600,
     lineHeight: FontSizes.displayL * 1.25,
   },
   h1: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope600,
     fontSize: FontSizes.xxl,
-    fontWeight: 600,
     lineHeight: FontSizes.xxl * 1.33,
   },
   h2: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope500,
     fontSize: FontSizes.xl,
-    fontWeight: 500,
     lineHeight: FontSizes.xl * 1.4,
   },
   h3: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope500,
     fontSize: FontSizes.lg,
-    fontWeight: 500,
     lineHeight: FontSizes.lg * 1.44,
   },
   bodyL: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope400,
     fontSize: FontSizes.md,
-    fontWeight: 400,
     lineHeight: FontSizes.md * 1.5,
 
   },
   bodyM: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope400,
     fontSize: FontSizes.sm,
-    fontWeight: 400,
     lineHeight: FontSizes.sm * 1.42,
   },
   bodyS: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope400,
     fontSize: FontSizes.xs,
-    fontWeight: 400,
     lineHeight: FontSizes.xs * 1.4,
   },
   labelL: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope600,
     fontSize: FontSizes.xs,
-    fontWeight: 600,
     lineHeight: FontSizes.xs * 1.33,
     letterSpacing: FontSizes.xs * 0.04,
   },
   labelM: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope500,
     fontSize: FontSizes.xs,
-    fontWeight: 500,
     lineHeight: FontSizes.xs * 1.33,
   },
   labelS: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope500,
     fontSize: FontSizes.xxs,
-    fontWeight: 500,
     lineHeight: FontSizes.xxs * 1.4,
   },
   cta: {
-    fontFamily: Fonts.font,
+    fontFamily: Fonts.manrope500,
     fontSize: FontSizes.md,
-    fontWeight: 500,
     lineHeight: FontSizes.md * 1.5,
   }
 });
 
 export const CommonStyles = StyleSheet.create({
-
+  page: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.coral100,
+    paddingHorizontal: 40,
+    paddingVertical: 55,
+  }
 });

@@ -5,12 +5,12 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useFonts } from "expo-font";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import * as NavigationBar from "expo-navigation-bar";
 import { useEffect } from "react";
+import { useLoadFonts } from "@/hooks/useLoadFonts";
 
 export default function RootLayout() {
   useEffect(() => {
@@ -23,16 +23,14 @@ export default function RootLayout() {
   }, []);
 
   const colorScheme = useColorScheme();
-  const [fontsLoaded] = useFonts({
-    Manrope: require("@/assets/fonts/ManropeVariableFont.ttf"),
-  });
+  const fontsLoaded = useLoadFonts();
 
   if (!fontsLoaded) {
     return null;
   }
 
   const screenOptions: NativeStackNavigationOptions = {
-    animation: "slide_from_right",
+    animation: "none",
     headerShown: false,
   };
 
@@ -41,6 +39,8 @@ export default function RootLayout() {
       <Stack screenOptions={screenOptions}>
         <Stack.Screen name="index" />
         <Stack.Screen name="pages/get-started" />
+        <Stack.Screen name="pages/login" />
+        <Stack.Screen name="pages/register" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
