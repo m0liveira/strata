@@ -5,4 +5,13 @@ type IconProps = {
     color?: string;
 };
 
-export type { IconProps };
+type SvgProps = {
+    classname?: StyleProp<ViewStyle>;
+    colors?: {
+        primary?: string;
+        secondary?: string;
+        tertiary?: string;
+    };
+};
+
+export type { IconProps, SvgProps };

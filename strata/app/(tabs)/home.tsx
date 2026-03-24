@@ -1,9 +1,24 @@
 import { Image } from "expo-image";
 import { Platform, StyleSheet } from "react-native";
 import { Link } from "expo-router";
+import { WaveSVG } from "@/components/svgs";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Theme } from "@/constants/global-styles";
 
 export default function HomeScreen() {
-  return <></>;
+  const colorScheme = useColorScheme();
+
+  return (
+    <>
+      <WaveSVG
+        colors={{
+          primary: Theme[colorScheme ?? "light"].coral500,
+          secondary: Theme[colorScheme ?? "light"].coral100,
+          tertiary: Theme[colorScheme ?? "light"].coral900,
+        }}
+      />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({

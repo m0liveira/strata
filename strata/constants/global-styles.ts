@@ -1,4 +1,4 @@
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const Colors = {
   coral100: 'hsl(13, 91%, 95%)',
