@@ -1,17 +1,21 @@
 import { View, Text } from "react-native";
-import Animated, { SlideInDown, SlideInRight } from "react-native-reanimated";
+import Animated, { SlideInDown } from "react-native-reanimated";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { WaveSVG } from "@/components/svgs";
 import { StrataCTA } from "@/components/strata-cta/StrataCTA";
 import StrataFooter from "@/components/strata-footer/StrataFooter";
-import { PlaneTakeOff, WaveEntrance } from "@/animations/index";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
+import { usePageAnimations } from "@/hooks/useAnimations";
 
 export default function GetStarted() {
+  const router = useRouter();
+  const { planeStyle, waveStyle, contentStyle, animateAndNavigate } =
+    usePageAnimations();
+
   return (
     <View style={styles.page}>
-      <Animated.View entering={WaveEntrance} style={styles.waveSvg}>
+      <Animated.View style={[styles.waveSvg, waveStyle]}>
         <WaveSVG
           colors={{
             primary: Colors.coral400,
@@ -22,29 +26,32 @@ export default function GetStarted() {
       </Animated.View>
 
       <Animated.Image
-        entering={PlaneTakeOff}
         source={require("@/assets/images/plane-taking-off.png")}
+        style={[styles.image, planeStyle]}
         resizeMode="contain"
-        style={styles.image}
       />
 
-      <Animated.Text style={styles.h1} entering={SlideInRight.duration(350)}>
+      <Animated.Text style={[styles.h1, contentStyle]}>
         Fly the world with Strata
       </Animated.Text>
 
-      <Animated.View
-        style={styles.container}
-        entering={SlideInRight.duration(350)}
-      >
+      <Animated.View style={[styles.container, contentStyle]}>
         <StrataCTA
           text="Get Started"
           isDisabled={false}
-          onPress={() => router.push("/pages/register")}
+          onPress={() =>
+            animateAndNavigate(() => router.push("/pages/register"))
+          }
         />
 
         <Text style={styles.p}>
           Already have an account?{" "}
-          <Text style={styles.link} onPress={() => router.push("/pages/login")}>
+          <Text
+            style={styles.link}
+            onPress={() =>
+              animateAndNavigate(() => router.push("/pages/login"))
+            }
+          >
             Log in
           </Text>
         </Text>
