@@ -2,7 +2,7 @@
 import { useSharedValue, useAnimatedStyle, withSpring, withDelay } from "react-native-reanimated";
 import { useCallback } from "react";
 import { useFocusEffect } from "expo-router";
-import { slideHorizontal, slideVertical, slideDiagonal } from "@/animations/presets";
+import { slideRightToLeft, slideTopToBottom, slideDiagonal } from "@/animations/presets";
 
 export function usePageAnimations() {
     const planeProgress = useSharedValue(0);
@@ -14,10 +14,6 @@ export function usePageAnimations() {
 
     useFocusEffect(
         useCallback(() => {
-            planeProgress.value = 0;
-            waveProgress.value = 0;
-            contentProgress.value = 0;
-
             waveProgress.value = withSpring(1, config);
             planeProgress.value = withDelay(100, withSpring(1, config));
             contentProgress.value = withDelay(150, withSpring(1, config));
@@ -31,12 +27,12 @@ export function usePageAnimations() {
 
         setTimeout(() => {
             navigateFn();
-        }, 600);
+        }, 500);
     };
 
     const planeStyle = useAnimatedStyle(() => slideDiagonal(planeProgress, 800, 400));
-    const waveStyle = useAnimatedStyle(() => slideVertical(waveProgress, -800));
-    const contentStyle = useAnimatedStyle(() => slideHorizontal(contentProgress, 400));
+    const waveStyle = useAnimatedStyle(() => slideTopToBottom(waveProgress, -800));
+    const contentStyle = useAnimatedStyle(() => slideRightToLeft(contentProgress, 400));
 
     return { planeStyle, waveStyle, contentStyle, animateAndNavigate };
 }

@@ -15,8 +15,15 @@ export const styles = StyleSheet.create({
         paddingVertical: 18,
         overflow: 'hidden'
     },
+    disabled: {
+        backgroundColor: Colors.coral100,
+        borderColor: Colors.coral400,
+    },
     text: {
         ...Typography.h2,
         color: Colors.white,
-    }
+    },
+    textDisabled: {
+        color: Colors.grey600,
+    },
 });

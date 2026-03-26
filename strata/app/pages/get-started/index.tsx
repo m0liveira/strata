@@ -6,7 +6,7 @@ import { WaveSVG } from "@/components/svgs";
 import { StrataCTA } from "@/components/strata-cta/StrataCTA";
 import StrataFooter from "@/components/strata-footer/StrataFooter";
 import { useRouter } from "expo-router";
-import { usePageAnimations } from "@/hooks/useAnimations";
+import { usePageAnimations } from "@/hooks/animations/useGetStartedAnimations";
 
 export default function GetStarted() {
   const router = useRouter();

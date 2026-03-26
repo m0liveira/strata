@@ -27,13 +27,22 @@ export function StrataCTA(props: CtaProps) {
       }}
       style={({ pressed }) => [
         styles.button,
+        props.isDisabled ? styles.disabled : null,
         props.classname,
         Platform.OS === "ios" && pressed && { opacity: 0.3 },
       ]}
       onPress={props.onPress}
       disabled={props.isDisabled}
     >
-      <Text style={[styles.text, props.textclassname]}>{props.text}</Text>
+      <Text
+        style={[
+          styles.text,
+          props.isDisabled ? styles.textDisabled : null,
+          props.textclassname,
+        ]}
+      >
+        {props.text}
+      </Text>
 
       {props.icon}
     </Pressable>
