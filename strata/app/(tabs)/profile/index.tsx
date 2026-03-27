@@ -1,11 +1,10 @@
-import { Image } from "expo-image";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, Text } from "react-native";
 
 import { Fonts } from "@/constants/global-styles";
 
-export default function TabTwoScreen() {
+export default function Profile() {
   return (
-    <></>
+    <><Text>Heloo</Text></>
   );
 }
 

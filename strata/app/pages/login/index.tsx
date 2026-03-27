@@ -57,7 +57,7 @@ export default function Login() {
 
         await SecureStore.setItemAsync("strata_user_token", user.access_token);
 
-        animateAndNavigate(() => router.replace("/pages/get-started"));
+        animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
       } catch (err: any) {
         displayToastNotification(err.message);
         setIsLoading(false);

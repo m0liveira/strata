@@ -5,7 +5,7 @@ import { WaveSVG } from "@/components/svgs";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Theme } from "@/constants/global-styles";
 
-export default function HomeScreen() {
+export default function Dashboard() {
   const colorScheme = useColorScheme();
 
   return (

@@ -140,5 +140,11 @@ export const CommonStyles = StyleSheet.create({
     backgroundColor: Colors.coral100,
     paddingHorizontal: 40,
     paddingVertical: 55,
+  },
+  scrollView: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   }
 });

@@ -20,7 +20,7 @@ export const useInitialRedirect = () => {
                         throw new Error(error);
                     }
 
-                    router.replace("/(tabs)/home");
+                    router.replace("/(tabs)/dashboard");
                 } else {
                     router.replace("/pages/get-started");
                 }

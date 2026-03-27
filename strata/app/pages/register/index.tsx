@@ -67,7 +67,7 @@ export default function Register() {
             user.access_token,
           );
 
-          animateAndNavigate(() => router.replace("/pages/get-started"));
+          animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
         } catch (err: any) {
           displayToastNotification(err.message);
           setIsLoading(false);
