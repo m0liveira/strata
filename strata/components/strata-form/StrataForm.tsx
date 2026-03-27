@@ -1,6 +1,5 @@
 import { StyleProp, View, ViewStyle } from "react-native";
 import { styles } from "./styles";
-import { Colors } from "@/constants/global-styles";
 
 type FormProps = {
   classname?: StyleProp<ViewStyle>;

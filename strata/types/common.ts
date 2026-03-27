@@ -15,6 +15,7 @@ type SvgProps = {
 };
 
 type Form = {
+    identifier?: string;
     name?: string;
     username?: string;
     email?: string;

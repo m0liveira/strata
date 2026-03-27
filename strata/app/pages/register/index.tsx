@@ -1,6 +1,7 @@
-import { View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, KeyboardAvoidingView, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import * as SecureStore from "expo-secure-store";
 import Animated from "react-native-reanimated";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
@@ -22,7 +23,8 @@ import {
   emailInputProperties,
   passwordInputProperties,
 } from "@/utils/input-properties";
-import { registerUser } from "@/utils/apiService";
+import { getUserData, loginUser, registerUser } from "@/utils/apiService";
+import { user } from "@/utils/userService";
 
 export default function Register() {
   const router = useRouter();
@@ -38,20 +40,44 @@ export default function Register() {
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [toastType, setToastType] = useState<"error" | "success">("error");
 
+  function displayToastNotification(response: string, type?: string) {
+    setResponse(response);
+    if (type) setToastType("success");
+    setIsVisible(true);
+  }
+
   async function handleSubmit(form: Form) {
     setIsLoading(true);
 
     try {
       const result = await registerUser(form);
 
-      setResponse(result.message);
-      setToastType("success");
-      setIsVisible(true);
+      try {
+        const res = await loginUser({ username, password });
+        user.access_token = res.access_token;
 
-      animateAndNavigate(() => router.replace("/pages/get-started"));
+        try {
+          const userData = await getUserData();
+          Object.assign(user, userData);
+
+          displayToastNotification(result.message, "success");
+
+          await SecureStore.setItemAsync(
+            "strata_user_token",
+            user.access_token,
+          );
+
+          animateAndNavigate(() => router.replace("/pages/get-started"));
+        } catch (err: any) {
+          displayToastNotification(err.message);
+          setIsLoading(false);
+        }
+      } catch (error: any) {
+        displayToastNotification(error.message);
+        setIsLoading(false);
+      }
     } catch (error: any) {
-      setResponse(error.message);
-      setIsVisible(true);
+      displayToastNotification(error.message);
       setIsLoading(false);
     }
   }

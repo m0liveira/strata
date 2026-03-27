@@ -31,3 +31,11 @@ export const passwordInputProperties = {
     placeholder: 'Password',
     secureTextEntry: true
 } as const;
+
+export const identifierInputProperties = {
+    autoCapitalize: "none",
+    inputMode: "text",
+    keyboardType: "email-address",
+    placeholder: 'Email or username',
+    secureTextEntry: false
+} as const;
