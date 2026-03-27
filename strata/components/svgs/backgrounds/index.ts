@@ -1,0 +1,1 @@
+export { WaveSVG } from './WaveSVG'

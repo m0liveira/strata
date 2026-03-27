@@ -5,34 +5,42 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useFonts } from "expo-font";
 import "react-native-reanimated";
-
 import { useColorScheme } from "@/hooks/use-color-scheme";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+import { NativeStackNavigationOptions } from "@react-navigation/native-stack";
+import * as NavigationBar from "expo-navigation-bar";
+import { useEffect } from "react";
+import { useLoadFonts } from "@/hooks/useLoadFonts";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  useEffect(() => {
+    const setup = async () => {
+      await NavigationBar.setPositionAsync("absolute");
+      await NavigationBar.setBackgroundColorAsync("transparent");
+      await NavigationBar.setBehaviorAsync("overlay-swipe");
+    };
+    setup();
+  }, []);
 
-  const [fontsLoaded] = useFonts({
-    Manrope: require("@/assets/fonts/ManropeVariableFont.ttf"),
-  });
+  const colorScheme = useColorScheme();
+  const fontsLoaded = useLoadFonts();
 
   if (!fontsLoaded) {
     return null;
   }
 
+  const screenOptions: NativeStackNavigationOptions = {
+    animation: "none",
+    headerShown: false,
+  };
+
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        {/* <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        /> */}
+    <ThemeProvider value={colorScheme === "light" ? DarkTheme : DefaultTheme}>
+      <Stack screenOptions={screenOptions}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="pages/get-started" />
+        <Stack.Screen name="pages/login" />
+        <Stack.Screen name="pages/register" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

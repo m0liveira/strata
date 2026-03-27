@@ -1,17 +1,13 @@
 import { Tabs } from "expo-router";
 import React from "react";
-
 import { HapticTab } from "@/components/haptic-tab";
 import { Theme } from "@/constants/global-styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useFonts } from "expo-font";
+import { useLoadFonts } from "@/hooks/useLoadFonts";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-
-  const [fontsLoaded] = useFonts({
-    Manrope: require("@/assets/fonts/ManropeVariableFont.ttf"),
-  });
+  const fontsLoaded = useLoadFonts();
 
   if (!fontsLoaded) {
     return null;
@@ -26,7 +22,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Home",
           // tabBarIcon: ({ color }) => (

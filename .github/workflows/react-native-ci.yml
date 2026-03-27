@@ -1,31 +1,36 @@
 name: React Native CI
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-    quality-check:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
+  quality-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./strata
 
-            - name: Setup Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "20"
-                  cache: "npm"
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Install dependencies
-              run: npm ci
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ./strata/package-lock.json
 
-            - name: Linting check
-              run: npm run lint
+      - name: Install dependencies
+        run: npm ci
 
-            - name: TypeScript Check
-              run: npx tsc
+      - name: Linting check
+        run: npm run lint
 
-            - name: Run Unit Tests
-              run: npm test
+      - name: TypeScript Check
+        run: npx tsc
+
+      - name: Run Unit Tests
+        run: npm test
