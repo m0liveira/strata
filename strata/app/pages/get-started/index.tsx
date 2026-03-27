@@ -3,8 +3,7 @@ import Animated, { SlideInDown } from "react-native-reanimated";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { WaveSVG } from "@/components/svgs";
-import { StrataCTA } from "@/components/strata-cta/StrataCTA";
-import StrataFooter from "@/components/strata-footer/StrataFooter";
+import { StrataCTA, StrataFooter } from "@/components";
 import { useRouter } from "expo-router";
 import { usePageAnimations } from "@/hooks/animations/useGetStartedAnimations";
 

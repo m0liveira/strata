@@ -10,7 +10,7 @@ type HeaderProps = {
   }[];
 };
 
-export default function StrataHeader(props: HeaderProps) {
+export function StrataHeader(props: HeaderProps) {
   return (
     <View style={[styles.container, props.classname]}>
       {props.icons.map((item, index) => (

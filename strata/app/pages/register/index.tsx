@@ -4,33 +4,56 @@ import { useState } from "react";
 import Animated from "react-native-reanimated";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
-import { usePageAnimations } from "@/hooks/animations/useAuthAnimations";
 import { WaveSVG } from "@/components/svgs";
 import { ArrowIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
-import StrataFooter from "@/components/strata-footer/StrataFooter";
-import StrataHeader from "@/components/strata-header/StrataHeader";
-import StrataForm from "@/components/strata-form/StrataForm";
-import StrataInput from "@/components/strata-inputs/StrataInput";
+import {
+  StrataFooter,
+  StrataHeader,
+  StrataForm,
+  StrataInput,
+  StrataCTA,
+  StrataToastAlert,
+} from "@/components";
+import { usePageAnimations } from "@/hooks/animations/useAuthAnimations";
+import { Form } from "@/types/common";
 import {
   nameInputProperties,
   usernameInputProperties,
   emailInputProperties,
   passwordInputProperties,
 } from "@/utils/input-properties";
-import { StrataCTA } from "@/components/strata-cta/StrataCTA";
+import { registerUser } from "@/utils/apiService";
 
 export default function Register() {
   const router = useRouter();
   const { invertedWaveStyle, contentStyle, animateAndNavigate } =
     usePageAnimations();
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [response, setResponse] = useState<string>("");
+  const [name, setName] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState("");
-  const [isPasswordHidden, setIsPasswordHidden] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isPasswordHidden, setIsPasswordHidden] = useState<boolean>(true);
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [toastType, setToastType] = useState<"error" | "success">("error");
 
-  function handleSubmit() {
-    console.log("Form data:", { name, username, email, password });
+  async function handleSubmit(form: Form) {
+    setIsLoading(true);
+
+    try {
+      const result = await registerUser(form);
+
+      setResponse(result.message);
+      setToastType("success");
+      setIsVisible(true);
+
+      animateAndNavigate(() => router.replace("/pages/get-started"));
+    } catch (error: any) {
+      setResponse(error.message);
+      setIsVisible(true);
+      setIsLoading(false);
+    }
   }
 
   const headerProps = [
@@ -103,9 +126,8 @@ export default function Register() {
         <StrataCTA
           classname={styles.button}
           text="Join Strata"
-          isDisabled={!email || !password || !username || !name}
-          onPress={handleSubmit}
-          // animateAndNavigate(handleSubmit)
+          isDisabled={!email || !password || !username || !name || isLoading}
+          onPress={() => handleSubmit({ name, username, email, password })}
         />
       ),
     },
@@ -113,6 +135,13 @@ export default function Register() {
 
   return (
     <View style={styles.page}>
+      <StrataToastAlert
+        visible={isVisible}
+        setVisible={setIsVisible}
+        message={response}
+        type={toastType}
+      />
+
       <Animated.View style={[styles.waveSvg, invertedWaveStyle]}>
         <WaveSVG
           colors={{

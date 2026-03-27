@@ -46,7 +46,7 @@ type InputProps = {
   };
 };
 
-export default function StrataInput(props: InputProps) {
+export function StrataInput(props: InputProps) {
   return (
     <View style={[styles.container, props.classname?.container]}>
       <TextInput

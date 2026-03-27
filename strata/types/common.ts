@@ -14,4 +14,11 @@ type SvgProps = {
     };
 };
 
-export type { IconProps, SvgProps };
+type Form = {
+    name?: string;
+    username?: string;
+    email?: string;
+    password?: string;
+}
+
+export type { IconProps, SvgProps, Form };

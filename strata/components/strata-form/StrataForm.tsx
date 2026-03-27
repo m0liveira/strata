@@ -9,7 +9,7 @@ type FormProps = {
   }[];
 };
 
-export default function StrataForm(props: FormProps) {
+export function StrataForm(props: FormProps) {
   return (
     <View style={[styles.form, props.classname]}>
       {props.elements.map((item, index) => (
