@@ -146,5 +146,12 @@ export const CommonStyles = StyleSheet.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-  }
+  },
+  glow: {
+    position: "absolute",
+    top: '15%',
+    left: '20%',
+    zIndex: 0,
+    filter: 'blur(25px)',
+  },
 });
