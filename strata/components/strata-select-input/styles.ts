@@ -27,8 +27,10 @@ export const styles = StyleSheet.create({
         width: 24,
         height: 16,
         borderRadius: 2,
+        borderColor: Colors.grey200,
+        borderWidth: 1,
     },
-    icon:{
+    icon: {
         width: 24,
         height: 24,
     },
@@ -53,7 +55,7 @@ export const styles = StyleSheet.create({
         ...Typography.labelS,
         color: Colors.coral900,
     },
-    badgeIcon:{
+    badgeIcon: {
         width: 16,
         height: 16,
     }

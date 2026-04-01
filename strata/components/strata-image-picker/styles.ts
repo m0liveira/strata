@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
         borderColor: Colors.grey200,
         borderWidth: 1,
         width: '100%',
-        height: 90,
+        height: 80,
         overflow: 'hidden',
     },
     image: {

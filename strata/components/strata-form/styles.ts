@@ -6,7 +6,7 @@ export const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
-        paddingTop: '20%',
+        // paddingTop: '20%',
     },
     label:{
         ...Typography.labelS,

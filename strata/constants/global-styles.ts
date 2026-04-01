@@ -154,4 +154,15 @@ export const CommonStyles = StyleSheet.create({
     zIndex: 0,
     filter: 'blur(25px)',
   },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    gap: 4,
+    maxHeight: 64,
+    marginTop: 70,
+    marginBottom: 50,
+    overflow: 'hidden',
+  },
 });

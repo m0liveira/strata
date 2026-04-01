@@ -15,7 +15,7 @@ import { Colors } from "@/constants/global-styles";
 import { UploadIcon, XCircleIcon } from "../icons";
 
 type ImagePickerProps = {
-  onImagePicked?: (uri: string | null) => void;
+  onImagePicked: (uri: string | null) => void;
   classname?: {
     container?: StyleProp<ViewStyle>;
     image?: StyleProp<ImageStyle>;
@@ -32,8 +32,8 @@ export function StrataImagePicker(props: ImagePickerProps) {
       if (status !== "granted") {
         // #TODO: Change alert by a StrataToast or something more elegant...
         Alert.alert(
-          "Permissão Necessária",
-          "Desculpa, precisamos de permissões de câmera/galeria para fazer isso funcionar!",
+          "Permission denied",
+          "Sorry, we need camera/gallery permissions to make this work!",
         );
         return;
       }
@@ -49,13 +49,13 @@ export function StrataImagePicker(props: ImagePickerProps) {
     if (!result.canceled) {
       const uri = result.assets[0].uri;
       setImageUri(uri);
-      props.onImagePicked?.(uri);
+      props.onImagePicked(uri);
     }
   };
 
   const removeImage = () => {
     setImageUri(null);
-    props.onImagePicked?.(null);
+    props.onImagePicked(null);
   };
 
   return (

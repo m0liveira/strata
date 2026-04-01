@@ -1,13 +1,14 @@
 import { ScrollView, Text, View } from "react-native";
+import { useState, useCallback, useLayoutEffect } from "react";
+import { router, useFocusEffect, Tabs } from "expo-router";
 import { styles } from "./styles";
-import { useState, useCallback } from "react";
-import { router, useFocusEffect } from "expo-router";
 import { user } from "@/utils/userService";
 import { EmptyState } from "@/app/pages/empty-state";
 import { Colors } from "@/constants/global-styles";
 import { StrataHeader, StrataButton } from "@/components";
 import { ArrowIcon, BellIcon } from "@/components/icons";
 import { TripCreationOptions, TripCreationForm } from "@/components/features/";
+import { screenOptions } from "../_layout";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -29,6 +30,14 @@ export default function MyTrips() {
     setCreationStage(1);
   }
 
+  function handleSubmit() {
+    if (creationStage !== 3) {
+      setCreationStage(creationStage + 1);
+    } else {
+      // #TODO: submit form and reset states
+    }
+  }
+
   function renderCreationStage() {
     switch (creationStage) {
       case 0:
@@ -38,27 +47,24 @@ export default function MyTrips() {
             generateOnPress={() => advanceToForm(false)}
           />
         );
-      case 1:
-        return <TripCreationForm stage={creationStage} />;
-      case 2:
+      default:
         return (
-          <TripCreationOptions
-            manualOnPress={() => advanceToForm(true)}
-            generateOnPress={() => advanceToForm(false)}
-          />
-        );
-      case 3:
-        return (
-          <TripCreationOptions
-            manualOnPress={() => advanceToForm(true)}
-            generateOnPress={() => advanceToForm(false)}
-          />
+          <TripCreationForm stage={creationStage} handleSubmit={handleSubmit} />
         );
     }
   }
 
   return (
     <View style={styles.page}>
+      <Tabs.Screen
+        options={{
+          tabBarStyle:
+            isCreating && creationStage !== 0
+              ? { display: "none" }
+              : screenOptions.tabBarStyle,
+        }}
+      />
+
       <StrataHeader
         classname={[
           styles.header,
@@ -73,8 +79,7 @@ export default function MyTrips() {
             ),
             classname: !isCreating ? styles.icon : styles.bgIcon,
             onPress: !isCreating
-              ? // #TODO: add notification functionality
-                () => {}
+              ? () => {} // #TODO: add notification functionality
               : () =>
                   creationStage === 0
                     ? setisCreating(!isCreating)
@@ -88,10 +93,7 @@ export default function MyTrips() {
           {isCreating ? (
             renderCreationStage()
           ) : (
-            <ScrollView
-              // style={styles.page}
-              contentContainerStyle={styles.scrollView}
-            >
+            <ScrollView contentContainerStyle={styles.scrollView}>
               <Text>Heloo</Text>
             </ScrollView>
           )}

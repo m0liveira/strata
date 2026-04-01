@@ -1,13 +1,11 @@
 import { StyleSheet } from 'react-native';
 import { BorderRadius, Colors, CommonStyles, Typography } from "@/constants/global-styles";
 
-export const styles = StyleSheet.create({
+export const styles = StyleSheet.create<any>({
     ...CommonStyles,
     page: {
-        backgroundColor: Colors.blue100,
         flex: 1,
         width: '100%',
-        paddingBottom: '40%',
     },
     scrollView: {
         ...CommonStyles.scrollView,
@@ -21,8 +19,7 @@ export const styles = StyleSheet.create({
         gap: 12,
         width: '100%',
         height: 24,
-        borderColor: Colors.primaryDark,
-        borderWidth: 1,
+        marginBottom: 24,
     },
     tracker: {
         backgroundColor: Colors.coral200,
@@ -34,7 +31,35 @@ export const styles = StyleSheet.create({
         backgroundColor: Colors.coral500,
         width: '30%',
     },
-    form:{
+    form: {
         paddingTop: 32,
     },
+    generalGap: {
+        marginBottom: 40,
+    },
+    enabledButton: {
+        ...CommonStyles.button,
+        backgroundColor: Colors.coral500,
+        borderColor: Colors.coral500,
+
+    },
+    disabledButton: {
+        ...CommonStyles.button,
+        backgroundColor: Colors.grey100,
+        borderColor: Colors.grey200,
+    },
+    buttonText: {
+        ...Typography.cta,
+        color: Colors.white,
+    },
+    disabledButtonText: {
+        ...Typography.cta,
+        color: Colors.grey400,
+    },
+    icon: {
+        aspectRatio: 1,
+        width: 36,
+        height: 36,
+        transform: [{ rotate: '180deg' }],
+    }
 });

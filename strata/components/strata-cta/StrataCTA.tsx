@@ -6,6 +6,7 @@ import {
   TextStyle,
   ViewStyle,
   Platform,
+  View,
 } from "react-native";
 import { styles } from "./styles";
 
@@ -44,7 +45,7 @@ export function StrataCTA(props: CtaProps) {
         {props.text}
       </Text>
 
-      {props.icon}
+      {props.icon && <View>{props.icon}</View>}
     </Pressable>
   );
 }

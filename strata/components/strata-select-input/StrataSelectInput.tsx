@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ViewStyle, StyleProp } from "react-native";
 import { Image } from "expo-image";
 import { useState } from "react";
 import { styles } from "./styles";
@@ -8,10 +8,19 @@ import { destinationInputProperties } from "@/utils/input-properties";
 import { searchLocation } from "@/utils/countriesApiService";
 import { GlobeIcon, XCircleIcon } from "../icons";
 
-export function StrataSelectInput() {
+type StrataSelectInputProps = {
+  classname?: StyleProp<ViewStyle>;
+  destinations: string[];
+  setDestinations: (destinations: string[]) => void;
+};
+
+export function StrataSelectInput({
+  destinations,
+  setDestinations,
+  classname,
+}: StrataSelectInputProps) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [selectedDestinations, setSelectedDestinations] = useState<any[]>([]);
 
   const handleSearch = (text: string) => {
     setQuery(text);
@@ -20,21 +29,20 @@ export function StrataSelectInput() {
   };
 
   const addDestination = (item: any) => {
-    if (!selectedDestinations.find((d) => d.name === item.name)) {
-      setSelectedDestinations([...selectedDestinations, item]);
+    if (!destinations.includes(item.name)) {
+      setDestinations([...destinations, item.name]);
     }
+
     setQuery("");
     setSuggestions([]);
   };
 
   const removeDestination = (name: string) => {
-    setSelectedDestinations(
-      selectedDestinations.filter((d) => d.name !== name),
-    );
+    setDestinations(destinations.filter((d) => d !== name));
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, classname]}>
       <StrataInput
         properties={{
           ...destinationInputProperties,
@@ -56,6 +64,7 @@ export function StrataSelectInput() {
                 style={styles.flag}
                 contentFit="cover"
               />
+
               <Text style={styles.suggestionText}>{item.name}</Text>
             </Pressable>
           ))}
@@ -65,30 +74,31 @@ export function StrataSelectInput() {
             onPress={() =>
               addDestination({
                 name: query,
-                type: "custom",
-                flag: null,
               })
             }
           >
             <GlobeIcon classname={styles.icon} color={Colors.grey600} />
+
             <Text style={styles.suggestionText}>Add &quot;{query}&quot;</Text>
           </Pressable>
         </View>
       )}
 
-      <View style={styles.badgeWrapper}>
-        {selectedDestinations.map((item, index) => (
-          <View key={index} style={styles.badge}>
-            <Text style={styles.badgeText}>{item.name}</Text>
-            <Pressable onPress={() => removeDestination(item.name)}>
-              <XCircleIcon
-                classname={styles.badgeIcon}
-                color={Colors.coral900}
-              />
-            </Pressable>
-          </View>
-        ))}
-      </View>
+      {destinations.length > 0 && (
+        <View style={styles.badgeWrapper}>
+          {destinations.map((name, index) => (
+            <View key={index} style={styles.badge}>
+              <Text style={styles.badgeText}>{name}</Text>
+              <Pressable onPress={() => removeDestination(name)}>
+                <XCircleIcon
+                  classname={styles.badgeIcon}
+                  color={Colors.coral900}
+                />
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
