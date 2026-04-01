@@ -23,7 +23,7 @@ import {
   emailInputProperties,
   passwordInputProperties,
 } from "@/utils/input-properties";
-import { getUserData, loginUser, registerUser } from "@/utils/apiService";
+import { getUserData, loginUser, registerUser } from "@/utils/StrataApiService";
 import { user } from "@/utils/userService";
 
 export default function Register() {

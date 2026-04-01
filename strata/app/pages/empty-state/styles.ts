@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
         justifyContent: 'space-between',
         flex: 1,
         width: '100%',
+        paddingBottom: '40%',
     },
     wrapper: {
         display: 'flex',

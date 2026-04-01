@@ -21,7 +21,7 @@ import {
   passwordInputProperties,
   identifierInputProperties,
 } from "@/utils/input-properties";
-import { loginUser, getUserData } from "@/utils/apiService";
+import { loginUser, getUserData } from "@/utils/StrataApiService";
 import { user } from "@/utils/userService";
 
 export default function Login() {
