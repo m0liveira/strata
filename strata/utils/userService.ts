@@ -11,5 +11,6 @@ export const user: User = {
     friends: [],
     following: [],
     followers: [],
-    trips: []
+    trips: [],
+    friends_profiles: [],
 }

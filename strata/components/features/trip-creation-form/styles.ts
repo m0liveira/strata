@@ -9,6 +9,7 @@ export const styles = StyleSheet.create<any>({
     },
     scrollView: {
         ...CommonStyles.scrollView,
+        flexGrow: 1,
         justifyContent: 'flex-start',
     },
     trackerContainer: {
@@ -61,5 +62,10 @@ export const styles = StyleSheet.create<any>({
         width: 36,
         height: 36,
         transform: [{ rotate: '180deg' }],
-    }
+    },
+    icon2: {
+        aspectRatio: 1,
+        width: 28,
+        height: 28,
+    },
 });

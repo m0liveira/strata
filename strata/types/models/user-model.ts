@@ -10,4 +10,12 @@ export type User = {
     following: number[];
     followers: number[];
     trips: any[];
+    friends_profiles?: PublicUser[],
+}
+
+export type PublicUser = {
+    user_id: number;
+    username: string;
+    name: string;
+    photo: string;
 }

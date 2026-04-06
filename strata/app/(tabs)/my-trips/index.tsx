@@ -1,5 +1,5 @@
 import { ScrollView, Text, View } from "react-native";
-import { useState, useCallback, useLayoutEffect } from "react";
+import { useState, useCallback, useLayoutEffect, useEffect } from "react";
 import { router, useFocusEffect, Tabs } from "expo-router";
 import { styles } from "./styles";
 import { user } from "@/utils/userService";
@@ -9,15 +9,34 @@ import { StrataHeader, StrataButton } from "@/components";
 import { ArrowIcon, BellIcon } from "@/components/icons";
 import { TripCreationOptions, TripCreationForm } from "@/components/features/";
 import { screenOptions } from "../_layout";
+import { getUsersData } from "@/utils/StrataApiService";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
   const [isManual, setisManual] = useState(true);
   const [creationStage, setCreationStage] = useState(0);
 
+  useEffect(() => {
+    const loadProfiles = async () => {
+      if (
+        (!user.friends_profiles || user.friends_profiles.length === 0) &&
+        user.friends?.length > 0
+      ) {
+        try {
+          const profiles = await getUsersData(user.friends);
+          user.friends_profiles = profiles;
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+    };
+
+    loadProfiles();
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      return () => {
+      return async () => {
         setisCreating(false);
         setisManual(true);
         setCreationStage(0);

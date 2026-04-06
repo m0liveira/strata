@@ -61,3 +61,28 @@ export const getUserData = async () => {
         throw error;
     }
 };
+
+export const getUsersData = async (ids: number[] | number) => {
+    if ((Array.isArray(ids) && ids.length === 0) || (!Array.isArray(ids) && typeof ids !== "number")) {
+        return [];
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/user/id/${Array.isArray(ids) ? ids.join(',') : ids}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get users data");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};

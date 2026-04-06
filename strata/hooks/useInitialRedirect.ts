@@ -19,15 +19,9 @@ export const useInitialRedirect = () => {
                 // #TODO: Implement new changes to data fetching and caching logic to the login and register flow.
                 // #NOTE: Implement this new logic in a service file or utility file
 
-                const cachedUser = await AsyncStorage.getItem("user_profile");
 
-                if (cachedUser) {
-                    Object.assign(user, JSON.parse(cachedUser));
-                } else {
-                    const userData = await getUserData();
-                    Object.assign(user, userData);
-                    await AsyncStorage.setItem("user_profile", JSON.stringify(userData));
-                }
+                const userData = await getUserData();
+                Object.assign(user, userData);
 
                 const cachedCountriesData = await AsyncStorage.getItem("countries_data");
 

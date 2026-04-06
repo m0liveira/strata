@@ -56,3 +56,11 @@ export const destinationInputProperties = {
     placeholder: 'Portugal',
     secureTextEntry: false
 } as const;
+
+export const searchInputProperties = {
+    autoCapitalize: "none",
+    inputMode: "text",
+    keyboardType: "default",
+    placeholder: 'Search',
+    secureTextEntry: false
+} as const;
