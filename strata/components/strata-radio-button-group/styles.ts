@@ -7,4 +7,9 @@ export const styles = StyleSheet.create({
         justifyContent: "space-between",
         width: "100%",
     },
+    scrollContent: {
+        flexDirection: "row",
+        gap: 12,
+        paddingHorizontal: 16,
+    },
 });

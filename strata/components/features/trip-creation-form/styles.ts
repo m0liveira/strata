@@ -68,4 +68,19 @@ export const styles = StyleSheet.create<any>({
         width: 28,
         height: 28,
     },
+    radioButton: {
+        height: 112,
+    },
+    scrollRadioButton: {
+        height: 120,
+        width: 100,
+    },
+    radioButtonLabel: {
+        ...Typography.bodyM,
+        color: Colors.grey600,
+    },
+    scrollRadioButtonLabel: {
+        ...Typography.bodyS,
+        color: Colors.grey600,
+    }
 });

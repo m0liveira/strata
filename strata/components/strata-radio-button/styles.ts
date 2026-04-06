@@ -36,4 +36,14 @@ export const styles = StyleSheet.create({
     unselectedText: {
         color: Colors.grey400,
     },
+    subLabelText: {
+        ...Typography.labelS,
+        textAlign: "center",
+    },
+    selectedSubLabel: {
+        color: Colors.coral400,
+    },
+    unselectedSubLabel: {
+        color: Colors.grey400,
+    },
 });

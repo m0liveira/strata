@@ -10,40 +10,21 @@ import { StrataSelectInput } from "@/components/strata-select-input/StrataSelect
 import { tripNameInputProperties } from "@/utils/input-properties";
 import { StrataRadioButtonGroup } from "@/components/strata-radio-button-group/StrataRadioButtonGroup";
 import { StrataCalendar } from "@/components/strata-calendar/StrataCalendar";
-import {
-  ArrowIcon,
-  GlobeIcon,
-  LockIcon,
-  MinusIcon,
-  PlusIcon,
-  UsersIcon,
-} from "@/components/icons";
+import { ArrowIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import { StrataSocialList } from "@/components/strata-social-list/StrataSocialList";
 import { user } from "@/utils/userService";
 import { PublicUser } from "@/types/models/user-model";
+import {
+  budgetOptions,
+  intensityOptions,
+  styleOptions,
+  visibilityOptions,
+} from "@/utils/radioButton-properties";
 
 type TripCreationFormProps = {
   stage: number;
   handleSubmit: () => void;
 };
-
-const visibilityOptions = [
-  {
-    id: "private",
-    label: "Private",
-    icon: <LockIcon />,
-  },
-  {
-    id: "public",
-    label: "Public",
-    icon: <GlobeIcon />,
-  },
-  {
-    id: "friends",
-    label: "Friends only",
-    icon: <UsersIcon />,
-  },
-];
 
 export const TripCreationForm = (props: TripCreationFormProps) => {
   const [banner, setBanner] = useState<string>(
@@ -58,11 +39,12 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     user.friends_profiles || [],
   );
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [budget, setBudget] = useState<string>("");
+  const [intensity, setIntensity] = useState<string>("");
+  const [tripStyle, setTripStyle] = useState<string>("adventure");
 
   useEffect(() => {
     setFriendsProfiles(user.friends_profiles || []);
-
-    console.log(friendsProfiles);
   }, []);
 
   const toggleUser = (userId: number) => {
@@ -75,6 +57,8 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
   };
 
   const isStepOneValid = name.trim().length > 0 && destinations.length > 0;
+  const isStepThreeValid =
+    budget.trim().length > 0 && intensity.trim().length > 0;
 
   const formProps = useMemo(() => {
     switch (props.stage) {
@@ -195,6 +179,72 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
           },
         ];
 
+      case 3:
+        return [
+          {
+            label: "Trip budget",
+            element: (
+              <StrataRadioButtonGroup
+                options={budgetOptions}
+                isScrollable={false}
+                labelStyle={styles.radioButtonLabel}
+                radioButtonStyle={styles.radioButton}
+                containerStyle={styles.generalGap}
+                selectedValue={budget}
+                onValueChange={setBudget}
+              />
+            ),
+          },
+          {
+            label: "Trip intensity",
+            element: (
+              <StrataRadioButtonGroup
+                options={intensityOptions}
+                isScrollable={false}
+                labelStyle={styles.radioButtonLabel}
+                radioButtonStyle={styles.radioButton}
+                containerStyle={styles.generalGap}
+                selectedValue={intensity}
+                onValueChange={setIntensity}
+              />
+            ),
+          },
+          // #TODO: Style carousel group buttons properly 
+          {
+            label: "Trip style",
+            element: (
+              <StrataRadioButtonGroup
+                options={styleOptions}
+                isScrollable={true}
+                labelStyle={styles.scrollRadioButtonLabel}
+                radioButtonStyle={styles.scrollRadioButton}
+                containerStyle={styles.generalGap}
+                selectedValue={tripStyle}
+                onValueChange={setTripStyle}
+              />
+            ),
+          },
+          {
+            element: (
+              <StrataCTA
+                text="Next"
+                isDisabled={!isStepThreeValid}
+                onPress={props.handleSubmit}
+                classname={
+                  isStepThreeValid
+                    ? styles.enabledButton
+                    : styles.disabledButton
+                }
+                icon={
+                  <ArrowIcon
+                    color={isStepThreeValid ? Colors.white : Colors.grey400}
+                  />
+                }
+              />
+            ),
+          },
+        ];
+
       default:
         return [];
     }
@@ -209,6 +259,10 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     endDate,
     friendsProfiles,
     selectedUsers,
+    budget,
+    intensity,
+    tripStyle,
+    isStepThreeValid,
   ]);
 
   return (

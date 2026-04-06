@@ -13,11 +13,13 @@ import { styles } from "./styles";
 type RadioButtonProps = {
   id: string;
   label: string;
+  subLabel?: string;
   icon: React.ReactNode;
   selected: boolean;
   onPress: (id: string) => void;
   containerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
+  subLabelStyle?: StyleProp<TextStyle>;
 };
 
 export function StrataRadioButton(props: RadioButtonProps) {
@@ -50,10 +52,24 @@ export function StrataRadioButton(props: RadioButtonProps) {
         style={[
           styles.labelText,
           props.selected ? styles.selectedText : styles.unselectedText,
+          props.labelStyle,
         ]}
       >
         {props.label}
       </Text>
+
+      {props.subLabel ? (
+        <Text
+          style={[
+            styles.subLabelText,
+            props.selected
+              ? styles.selectedSubLabel
+              : styles.unselectedSubLabel,
+          ]}
+        >
+          {props.subLabel}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }
