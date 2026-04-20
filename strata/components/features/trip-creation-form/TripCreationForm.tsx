@@ -1,5 +1,6 @@
 import { View, ScrollView } from "react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { StrataCTA } from "@/components/strata-cta/StrataCTA";
@@ -23,7 +24,7 @@ import {
 
 type TripCreationFormProps = {
   stage: number;
-  handleSubmit: () => void;
+  handleSubmit: (data: any) => void;
 };
 
 export const TripCreationForm = (props: TripCreationFormProps) => {
@@ -47,6 +48,27 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     setFriendsProfiles(user.friends_profiles || []);
   }, []);
 
+  const resetForm = () => {
+    setBanner("/assets/images/default-banner.png");
+    setName("");
+    setDestinations([]);
+    setVisibility("private");
+    setStartDate(null);
+    setEndDate(null);
+    setSelectedUsers([]);
+    setBudget("");
+    setIntensity("");
+    setTripStyle("adventure");
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        resetForm();
+      };
+    }, []),
+  );
+
   const toggleUser = (userId: number) => {
     const idStr = String(userId);
     setSelectedUsers((prev) =>
@@ -61,6 +83,23 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     budget.trim().length > 0 && intensity.trim().length > 0;
 
   const formProps = useMemo(() => {
+    function handleSubmit() {
+      const data = {
+        banner,
+        name,
+        visibility,
+        start_date: startDate,
+        end_date: endDate,
+        budget_level: budget,
+        intensity_level: intensity,
+        travel_style: tripStyle,
+        destinations,
+        selectedUsers,
+      };
+
+      props.handleSubmit(data);
+    }
+
     switch (props.stage) {
       case 1:
         return [
@@ -113,7 +152,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
               <StrataCTA
                 text="Next"
                 isDisabled={!isStepOneValid}
-                onPress={props.handleSubmit}
+                onPress={handleSubmit}
                 classname={
                   isStepOneValid ? styles.enabledButton : styles.disabledButton
                 }
@@ -171,7 +210,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
               <StrataCTA
                 text="Next"
                 isDisabled={false}
-                onPress={props.handleSubmit}
+                onPress={handleSubmit}
                 classname={styles.enabledButton}
                 icon={<ArrowIcon color={Colors.white} />}
               />
@@ -182,7 +221,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
       case 3:
         return [
           {
-            label: "Trip budget",
+            label: "* Trip budget",
             element: (
               <StrataRadioButtonGroup
                 options={budgetOptions}
@@ -196,7 +235,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
             ),
           },
           {
-            label: "Trip intensity",
+            label: "* Trip intensity",
             element: (
               <StrataRadioButtonGroup
                 options={intensityOptions}
@@ -209,9 +248,9 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
               />
             ),
           },
-          // #TODO: Style carousel group buttons properly 
+          // #TODO: Style carousel group buttons properly
           {
-            label: "Trip style",
+            label: "* Trip style",
             element: (
               <StrataRadioButtonGroup
                 options={styleOptions}
@@ -229,7 +268,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
               <StrataCTA
                 text="Next"
                 isDisabled={!isStepThreeValid}
-                onPress={props.handleSubmit}
+                onPress={handleSubmit}
                 classname={
                   isStepThreeValid
                     ? styles.enabledButton
@@ -249,19 +288,19 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
         return [];
     }
   }, [
-    props.stage,
-    props.handleSubmit,
+    props,
+    banner,
     name,
     destinations,
     visibility,
-    isStepOneValid,
     startDate,
     endDate,
-    friendsProfiles,
     selectedUsers,
     budget,
     intensity,
     tripStyle,
+    isStepOneValid,
+    friendsProfiles,
     isStepThreeValid,
   ]);
 

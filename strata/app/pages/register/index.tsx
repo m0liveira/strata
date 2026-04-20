@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import Animated from "react-native-reanimated";
-import { styles } from "./styles";
+import { styles } from "@/styles/register/styles";
 import { Colors } from "@/constants/global-styles";
 import { WaveSVG } from "@/components/svgs";
 import { ArrowIcon, EyeIcon, EyeOffIcon } from "@/components/icons";

@@ -1,7 +1,8 @@
 import { ScrollView, Text, View } from "react-native";
-import { useState, useCallback, useLayoutEffect, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { router, useFocusEffect, Tabs } from "expo-router";
-import { styles } from "./styles";
+import * as Crypto from "expo-crypto";
+import { styles } from "@/styles/my-trips/styles";
 import { user } from "@/utils/userService";
 import { EmptyState } from "@/app/pages/empty-state";
 import { Colors } from "@/constants/global-styles";
@@ -9,7 +10,13 @@ import { StrataHeader, StrataButton } from "@/components";
 import { ArrowIcon, BellIcon } from "@/components/icons";
 import { TripCreationOptions, TripCreationForm } from "@/components/features/";
 import { screenOptions } from "../_layout";
-import { getUsersData } from "@/utils/StrataApiService";
+import {
+  getUsersData,
+  uploadImageToSupabase,
+  deleteImageFromSupabase,
+  pushChanges,
+  inviteToTrip,
+} from "@/utils/StrataApiService";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -49,11 +56,84 @@ export default function MyTrips() {
     setCreationStage(1);
   }
 
-  function handleSubmit() {
+  const handleCreateTrip = async (data: any) => {
+    let finalBannerUrl = data.banner;
+    let imageWasUploaded = false;
+
+    try {
+      if (data.banner && data.banner.startsWith("file://")) {
+        finalBannerUrl = await uploadImageToSupabase(data.banner, "banners");
+        imageWasUploaded = true;
+      }
+
+      const { destinations, selectedUsers, banner, ...tripCoreData } = data;
+
+      const newTripId = Crypto.randomUUID();
+
+      const createdDestinations = destinations.map((destination: string) => ({
+        destination_id: Crypto.randomUUID(),
+        trip_id: newTripId,
+        destination,
+      }));
+
+      const formattedTripData = {
+        ...tripCoreData,
+        start_date: new Date(tripCoreData.start_date).toISOString(),
+        end_date: new Date(tripCoreData.end_date).toISOString(),
+      };
+
+      const myChanges = {
+        trips: {
+          created: [
+            {
+              trip_id: newTripId,
+              banner: finalBannerUrl,
+              ...formattedTripData,
+            },
+          ],
+          updated: [],
+          deleted: [],
+        },
+        destinations: {
+          created: createdDestinations,
+          updated: [],
+          deleted: [],
+        },
+      };
+
+      await pushChanges(myChanges);
+
+      for (const user of selectedUsers) {
+        await inviteToTrip(newTripId, user);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error creating trip. Please try again.");
+
+      if (imageWasUploaded && finalBannerUrl) {
+        try {
+          await deleteImageFromSupabase(finalBannerUrl, "banners");
+        } catch (cleanupError) {
+          console.error(
+            "Error during cleanup of uploaded image after failed trip creation:",
+            cleanupError,
+          );
+        }
+      }
+    }
+  };
+
+  async function handleSubmit(data: any) {
     if (creationStage !== 3) {
       setCreationStage(creationStage + 1);
     } else {
-      // #TODO: submit form and reset states
+      // #TODO: Save trip locally first...
+
+      handleCreateTrip(data);
+
+      setisCreating(false);
+      setisManual(true);
+      setCreationStage(0);
     }
   }
 

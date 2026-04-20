@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, View, Image } from "react-native";
-import { styles } from "./styles";
+import { styles } from "@/styles/empty-state/styles";
 import { GlobeShadowSVG } from "@/components/svgs";
 
 type EmptyStateProps = {
