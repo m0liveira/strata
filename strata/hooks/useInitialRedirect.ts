@@ -19,7 +19,6 @@ export const useInitialRedirect = () => {
                 // #TODO: Implement new changes to data fetching and caching logic to the login and register flow.
                 // #NOTE: Implement this new logic in a service file or utility file
 
-
                 const userData = await getUserData();
                 Object.assign(user, userData);
 

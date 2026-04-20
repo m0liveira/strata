@@ -17,11 +17,19 @@ import {
   pushChanges,
   inviteToTrip,
 } from "@/utils/StrataApiService";
+import { StrataTab } from "@/components/strata-tab/StrataTab";
+import { TripCard } from "@/components/strata-trip-card/StrataTripCard";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
   const [isManual, setisManual] = useState(true);
   const [creationStage, setCreationStage] = useState(0);
+  const [currentTab, setCurrentTab] = useState("Upcoming");
+  const [trips, setTrips] = useState<any[]>([]);
+
+  const tabs = ["Upcoming", "Past trips"];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   useEffect(() => {
     const loadProfiles = async () => {
@@ -43,6 +51,8 @@ export default function MyTrips() {
 
   useFocusEffect(
     useCallback(() => {
+      setTrips([...user.trips]);
+
       return async () => {
         setisCreating(false);
         setisManual(true);
@@ -106,6 +116,9 @@ export default function MyTrips() {
       for (const user of selectedUsers) {
         await inviteToTrip(newTripId, user);
       }
+
+      user.trips.push(myChanges.trips.created[0]);
+      setTrips([...user.trips]);
     } catch (error) {
       console.error(error);
       alert("Error creating trip. Please try again.");
@@ -129,7 +142,7 @@ export default function MyTrips() {
     } else {
       // #TODO: Save trip locally first...
 
-      handleCreateTrip(data);
+      await handleCreateTrip(data);
 
       setisCreating(false);
       setisManual(true);
@@ -152,6 +165,26 @@ export default function MyTrips() {
         );
     }
   }
+
+  const upcomingTrips = trips
+    .filter((trip) => {
+      const endDate = new Date(trip.end_date);
+      return endDate >= today;
+    })
+    .sort((a, b) => {
+      return (
+        new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+      );
+    });
+
+  const pastTrips = trips
+    .filter((trip) => {
+      const endDate = new Date(trip.end_date);
+      return endDate < today;
+    })
+    .sort((a, b) => {
+      return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+    });
 
   return (
     <View style={styles.page}>
@@ -187,13 +220,48 @@ export default function MyTrips() {
         ]}
       />
 
-      {!user.trips || isCreating ? (
+      {user.trips.length > 0 || isCreating ? (
         <>
           {isCreating ? (
             renderCreationStage()
           ) : (
-            <ScrollView contentContainerStyle={styles.scrollView}>
-              <Text>Heloo</Text>
+            <ScrollView
+              style={styles.scrollPage}
+              contentContainerStyle={[
+                styles.scrollView,
+                { justifyContent: "flex-start", paddingVertical: 10, gap: 40 },
+              ]}
+            >
+              <StrataTab
+                tabs={tabs}
+                activeTab={currentTab}
+                onTabPress={(tabTitle) => setCurrentTab(tabTitle)}
+              />
+
+              {currentTab === "Upcoming"
+                ? // () => router.push(`/trip/${trip.trip_id}`)
+                  upcomingTrips.map((trip) => (
+                    <TripCard
+                      key={trip.trip_id}
+                      trip={trip}
+                      onPress={() => {}}
+                    />
+                  ))
+                : pastTrips.map((trip) => (
+                    <TripCard
+                      key={trip.trip_id}
+                      trip={trip}
+                      onPress={() => {}}
+                    />
+                  ))}
+
+              <StrataButton
+                key="create-trip"
+                title="Create Trip"
+                text="Plan your dream trip!"
+                imageSource={require("@/assets/images/plane-taking-off.png")}
+                onPress={() => setisCreating(true)}
+              />
             </ScrollView>
           )}
         </>

@@ -13,8 +13,8 @@ export const styles = StyleSheet.create({
     scrollPage: {
         flex: 1,
         width: '100%',
-        borderWidth: 1,
-        borderColor: Colors.coral500,
+        // borderWidth: 1,
+        // borderColor: Colors.coral500,
     },
     container: {
         width: '100%',
