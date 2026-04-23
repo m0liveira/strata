@@ -11,13 +11,13 @@ import { styles } from "./styles";
 
 type RadioButtonGroupProps = {
   options: {
-    id: string;
+    id: string | number;
     label: string;
     subLabel?: string;
     icon: React.ReactNode;
   }[];
-  selectedValue: string | null;
-  onValueChange: (value: string) => void;
+  selectedValue: string | number | null;
+  onValueChange: (value: string | number) => void;
   isScrollable?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;

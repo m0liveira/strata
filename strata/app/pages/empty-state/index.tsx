@@ -1,11 +1,12 @@
 import React from "react";
-import { Text, View, Image } from "react-native";
+import { Text, View, Image, ViewStyle, StyleProp } from "react-native";
 import { styles } from "@/styles/empty-state/styles";
 import { GlobeShadowSVG } from "@/components/svgs";
 
 type EmptyStateProps = {
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
+  globeClassName?: StyleProp<ViewStyle>;
   buttons?: React.ReactNode[];
 };
 
@@ -13,7 +14,7 @@ export function EmptyState(props: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <View style={styles.wrapper}>
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, props.globeClassName]}>
           <GlobeShadowSVG />
 
           <Image

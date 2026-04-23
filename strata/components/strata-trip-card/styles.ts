@@ -95,10 +95,16 @@ export const styles = StyleSheet.create({
     },
     label: {
         ...Typography.labelM,
+        textTransform: 'capitalize',
+        lineHeight: 16,
         color: Colors.secondaryDark,
     },
     category: {
         ...Typography.labelS,
         color: Colors.grey400,
     },
+    current: {
+        color: Colors.coral300,
+        borderColor: Colors.coral300,
+    }
 });

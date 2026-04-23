@@ -142,7 +142,7 @@ export const CommonStyles = StyleSheet.create({
     paddingVertical: 55,
   },
   scrollView: {
-    flex: 1,
+    flexGrow: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',

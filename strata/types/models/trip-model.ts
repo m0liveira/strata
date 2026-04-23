@@ -17,3 +17,19 @@
 //     @readonly @date('created_at') created_at?: Date;
 //     @readonly @date('updated_at') updated_at?: Date;
 // }
+
+export type Trip = {
+    trip_id: string;
+    banner: string;
+    name: string;
+    visibility: string;
+    start_date: string;
+    end_date: string;
+    budget_level: string;
+    intensity_level: string;
+    travel_style: string;
+    rating?: number;
+    created_at?: string;
+    updated_at?: string;
+    deleted_at?: string;
+}

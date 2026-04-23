@@ -11,12 +11,12 @@ import { Colors } from "@/constants/global-styles";
 import { styles } from "./styles";
 
 type RadioButtonProps = {
-  id: string;
+  id: string | number;
   label: string;
   subLabel?: string;
   icon: React.ReactNode;
   selected: boolean;
-  onPress: (id: string) => void;
+  onPress: (id: string | number) => void;
   containerStyle?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
   subLabelStyle?: StyleProp<TextStyle>;

@@ -226,10 +226,11 @@ export default function MyTrips() {
             renderCreationStage()
           ) : (
             <ScrollView
+              showsVerticalScrollIndicator={false}
               style={styles.scrollPage}
               contentContainerStyle={[
                 styles.scrollView,
-                { justifyContent: "flex-start", paddingVertical: 10, gap: 40 },
+                { justifyContent: "flex-start", paddingTop: 10, gap: 40 },
               ]}
             >
               <StrataTab
@@ -239,23 +240,39 @@ export default function MyTrips() {
               />
 
               {currentTab === "Upcoming"
-                ? // () => router.push(`/trip/${trip.trip_id}`)
-                  upcomingTrips.map((trip) => (
+                ? upcomingTrips.map((trip) => (
                     <TripCard
                       key={trip.trip_id}
                       trip={trip}
-                      onPress={() => {}}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/trip/[trip_id]",
+                          params: {
+                            trip_id: trip.trip_id,
+                            origin: "my-trips",
+                          },
+                        })
+                      }
                     />
                   ))
                 : pastTrips.map((trip) => (
                     <TripCard
                       key={trip.trip_id}
                       trip={trip}
-                      onPress={() => {}}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/trip/[trip_id]",
+                          params: {
+                            trip_id: trip.trip_id,
+                            origin: "my-trips",
+                          },
+                        })
+                      }
                     />
                   ))}
 
               <StrataButton
+                classname={styles.createTripButton}
                 key="create-trip"
                 title="Create Trip"
                 text="Plan your dream trip!"

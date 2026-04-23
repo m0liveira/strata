@@ -14,24 +14,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { ArrowIcon, BarbellIcon, CoinIcon, WalkIcon } from "@/components/icons";
+import { Trip } from "@/types/models/trip-model";
 
 type TripCardProps = {
   classname?: StyleProp<ViewStyle>;
-  trip: {
-    trip_id: string;
-    banner: string;
-    name: string;
-    visibility: string;
-    start_date: string;
-    end_date: string;
-    budget_level: string;
-    intensity_level: string;
-    travel_style: string;
-    rating?: number;
-    created_at?: string;
-    updated_at?: string;
-    deleted_at?: string;
-  };
+  trip: Trip;
   onPress: () => void;
 };
 
@@ -56,6 +43,17 @@ export function TripCard(props: TripCardProps) {
     },
   ];
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = new Date(props.trip.start_date);
+  startDate.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(props.trip.end_date);
+  endDate.setHours(0, 0, 0, 0);
+
+  const isCurrent = startDate <= today && endDate >= today;
+
   return (
     <Pressable
       android_ripple={{
@@ -65,6 +63,7 @@ export function TripCard(props: TripCardProps) {
       style={({ pressed }) => [
         styles.card,
         props.classname,
+        isCurrent && styles.current,
         Platform.OS === "ios" && pressed && { opacity: 0.3 },
       ]}
       onPress={props.onPress}
@@ -83,7 +82,7 @@ export function TripCard(props: TripCardProps) {
 
         <View style={styles.tripContainer}>
           <View style={styles.textContainer}>
-            <Text style={[styles.date]}>
+            <Text style={[styles.date, isCurrent && styles.current]}>
               {new Date(props.trip.start_date).toLocaleDateString("pt-PT")}
             </Text>
 

@@ -33,16 +33,16 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
   );
   const [name, setName] = useState<string>("");
   const [destinations, setDestinations] = useState<string[]>([]);
-  const [visibility, setVisibility] = useState<string>("private");
+  const [visibility, setVisibility] = useState<string | number>("private");
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [friendsProfiles, setFriendsProfiles] = useState<PublicUser[]>(
     user.friends_profiles || [],
   );
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [budget, setBudget] = useState<string>("");
-  const [intensity, setIntensity] = useState<string>("");
-  const [tripStyle, setTripStyle] = useState<string>("adventure");
+  const [budget, setBudget] = useState<string | number>("");
+  const [intensity, setIntensity] = useState<string | number>("");
+  const [tripStyle, setTripStyle] = useState<string | number>("adventure");
 
   useEffect(() => {
     setFriendsProfiles(user.friends_profiles || []);
@@ -80,7 +80,8 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
 
   const isStepOneValid = name.trim().length > 0 && destinations.length > 0;
   const isStepThreeValid =
-    budget.trim().length > 0 && intensity.trim().length > 0;
+    budget.toString().trim().length > 0 &&
+    intensity.toString().trim().length > 0;
 
   const formProps = useMemo(() => {
     function handleSubmit() {
@@ -156,9 +157,13 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
                 classname={
                   isStepOneValid ? styles.enabledButton : styles.disabledButton
                 }
+                textclassname={
+                  isStepOneValid ? styles.buttonText : styles.disabledButtonText
+                }
                 icon={
                   <ArrowIcon
                     color={isStepOneValid ? Colors.white : Colors.grey400}
+                    classname={styles.icon}
                   />
                 }
               />
@@ -212,7 +217,10 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
                 isDisabled={false}
                 onPress={handleSubmit}
                 classname={styles.enabledButton}
-                icon={<ArrowIcon color={Colors.white} />}
+                textclassname={styles.buttonText}
+                icon={
+                  <ArrowIcon color={Colors.white} classname={styles.icon} />
+                }
               />
             ),
           },
@@ -274,9 +282,15 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
                     ? styles.enabledButton
                     : styles.disabledButton
                 }
+                textclassname={
+                  isStepThreeValid
+                    ? styles.buttonText
+                    : styles.disabledButtonText
+                }
                 icon={
                   <ArrowIcon
                     color={isStepThreeValid ? Colors.white : Colors.grey400}
+                    classname={styles.icon}
                   />
                 }
               />
@@ -304,8 +318,15 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     isStepThreeValid,
   ]);
 
+  // #FIXME: when creating trip without start_date, it sets the dates to 1970 instead of null
+  // #FIXME: Trip creation form scrolls infinitely...
+
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.scrollView}>
+    <ScrollView
+      style={styles.page}
+      contentContainerStyle={styles.scrollView}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.trackerContainer}>
         {[1, 2, 3].map((s) => (
           <View

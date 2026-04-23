@@ -1,4 +1,4 @@
-import { View, Text, StyleProp, ViewStyle, Pressable } from "react-native";
+import { Text, StyleProp, ViewStyle, Pressable, ScrollView } from "react-native";
 import { styles } from "./styles";
 
 type TabProps = {
@@ -10,7 +10,12 @@ type TabProps = {
 
 export function StrataTab(props: TabProps) {
   return (
-    <View style={[styles.container, props.classname]}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.scrollView}
+      contentContainerStyle={[styles.container, props.classname]}
+    >
       {props.tabs.map((tabTitle, index) => {
         const isActive = props.activeTab === tabTitle;
 
@@ -26,6 +31,6 @@ export function StrataTab(props: TabProps) {
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }

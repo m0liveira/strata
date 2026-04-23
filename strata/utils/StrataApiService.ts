@@ -110,6 +110,66 @@ export const inviteToTrip = async (tripId: string, userId: number) => {
     }
 };
 
+export const getTripByID = async (tripId: string) => {
+    try {
+        const response = await fetch(`${API_URL}/trips/${tripId}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get trip");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
+type TicketData = {
+    uri: string;
+    fileName: string;
+    mimeType: string;
+};
+
+export const uploadTicketToSupabase = async (ticketData: TicketData, bucket: string) => {
+    const formData = new FormData();
+
+    formData.append('file', {
+        uri: ticketData.uri,
+        name: ticketData.fileName,
+        type: ticketData.mimeType || 'application/octet-stream',
+    } as any);
+
+    formData.append('bucket', bucket);
+
+    try {
+        const response = await fetch(`${API_URL}/supabase/upload`, {
+            method: "POST",
+            headers: {
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to upload ticket");
+        }
+
+        const data = await response.json();
+
+        return data.url;
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const uploadImageToSupabase = async (imageUri: string, bucket: string) => {
     const filename = imageUri.split('/').pop() || `image-${Date.now()}.jpg`;
     const match = /\.(\w+)$/.exec(filename);
@@ -161,11 +221,11 @@ export const deleteImageFromSupabase = async (imageUri: string, bucket: string) 
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to delete image"); 
+            throw new Error(errorData.message || "Failed to delete image");
         }
 
         const data = await response.json();
-        return data; 
+        return data;
     } catch (error) {
         throw error;
     }

@@ -5,10 +5,30 @@ export const styles = StyleSheet.create({
     ...CommonStyles,
     page: {
         ...CommonStyles.page,
+        justifyContent: 'flex-start',
+        gap: 40,
         backgroundColor: Colors.white,
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+    },
+    tabContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        width: 'auto',
         paddingHorizontal: 40,
-        paddingTop: 55,
-        paddingBottom: 0,
+    },
+    emptyStateContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        width: '100%',
+        paddingHorizontal: 40,
+        paddingTop: 40,
+    },
+    globe: {
+        width: '100%',
+        height: '100%',
     },
     scrollPage: {
         flex: 1,
@@ -25,6 +45,7 @@ export const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         width: '100%',
         marginBottom: 34,
+        marginTop: 55,
     },
     icon: {
         aspectRatio: 1,
