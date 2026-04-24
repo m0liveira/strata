@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import Animated from "react-native-reanimated";
-import { styles } from "./styles";
+import { styles } from "@/styles/register/styles";
 import { Colors } from "@/constants/global-styles";
 import { WaveSVG } from "@/components/svgs";
 import { ArrowIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
@@ -23,7 +23,7 @@ import {
   emailInputProperties,
   passwordInputProperties,
 } from "@/utils/input-properties";
-import { getUserData, loginUser, registerUser } from "@/utils/apiService";
+import { getUserData, loginUser, registerUser } from "@/utils/StrataApiService";
 import { user } from "@/utils/userService";
 
 export default function Register() {
@@ -67,7 +67,7 @@ export default function Register() {
             user.access_token,
           );
 
-          animateAndNavigate(() => router.replace("/pages/get-started"));
+          animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
         } catch (err: any) {
           displayToastNotification(err.message);
           setIsLoading(false);

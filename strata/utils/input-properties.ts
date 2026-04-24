@@ -39,3 +39,28 @@ export const identifierInputProperties = {
     placeholder: 'Email or username',
     secureTextEntry: false
 } as const;
+
+export const tripNameInputProperties = {
+    autoCapitalize: "words",
+    inputMode: "text",
+    keyboardType: "default",
+    placeholder: 'Portugal Trip',
+    maxLength: 32,
+    secureTextEntry: false
+} as const;
+
+export const destinationInputProperties = {
+    autoCapitalize: "words",
+    inputMode: "text",
+    keyboardType: "default",
+    placeholder: 'Portugal',
+    secureTextEntry: false
+} as const;
+
+export const searchInputProperties = {
+    autoCapitalize: "none",
+    inputMode: "text",
+    keyboardType: "default",
+    placeholder: 'Search',
+    secureTextEntry: false
+} as const;

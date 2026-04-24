@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { getUserData } from "@/utils/apiService";
+import { getUserData } from "@/utils/StrataApiService";
 import { user } from "@/utils/userService";
+import { countryData, getFullCountriesData } from "@/utils/countriesApiService";
 
 export const useInitialRedirect = () => {
     useEffect(() => {
@@ -10,20 +12,27 @@ export const useInitialRedirect = () => {
             try {
                 const token = await SecureStore.getItemAsync("strata_user_token");
 
-                if (token) {
-                    user.access_token = token;
+                if (!token) { router.replace("/pages/get-started"); }
 
-                    try {
-                        const userData = await getUserData();
-                        Object.assign(user, userData);
-                    } catch (error: any) {
-                        throw new Error(error);
-                    }
+                user.access_token = token as string;
 
-                    router.replace("/(tabs)/home");
+                // #TODO: Implement new changes to data fetching and caching logic to the login and register flow.
+                // #NOTE: Implement this new logic in a service file or utility file
+
+                const userData = await getUserData();
+                Object.assign(user, userData);
+
+                const cachedCountriesData = await AsyncStorage.getItem("countries_data");
+
+                if (!cachedCountriesData) {
+                    const countriesData = await getFullCountriesData();
+                    countryData.countries = countriesData;
+                    await AsyncStorage.setItem("countries_data", JSON.stringify(countriesData));
                 } else {
-                    router.replace("/pages/get-started");
+                    countryData.countries = JSON.parse(cachedCountriesData);
                 }
+
+                router.replace("/(tabs)/dashboard");
             } catch (error) {
                 console.error("Redirection error:", error);
                 // TODO: Redirect to error page or show a toast notification here...

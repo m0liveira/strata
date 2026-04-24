@@ -1,16 +1,4 @@
-type User = {
-    access_token: string;
-    user_id: number | null;
-    username: string;
-    email: string;
-    name: string;
-    photo: string;
-    pending_friends: number[];
-    friends: number[];
-    following: number[];
-    followers: number[];
-    trips: any[];
-}
+import { User } from "@/types/models/user-model";
 
 export const user: User = {
     access_token: '',
@@ -23,5 +11,6 @@ export const user: User = {
     friends: [],
     following: [],
     followers: [],
-    trips: []
+    trips: [],
+    friends_profiles: [],
 }

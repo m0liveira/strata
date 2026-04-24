@@ -140,5 +140,29 @@ export const CommonStyles = StyleSheet.create({
     backgroundColor: Colors.coral100,
     paddingHorizontal: 40,
     paddingVertical: 55,
-  }
+  },
+  scrollView: {
+    flexGrow: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  glow: {
+    position: "absolute",
+    top: '15%',
+    left: '20%',
+    zIndex: 0,
+    filter: 'blur(25px)',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    gap: 4,
+    maxHeight: 64,
+    marginTop: 70,
+    marginBottom: 50,
+    overflow: 'hidden',
+  },
 });

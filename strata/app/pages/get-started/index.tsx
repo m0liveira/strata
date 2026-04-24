@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 import Animated, { SlideInDown } from "react-native-reanimated";
-import { styles } from "./styles";
+import { styles } from "@/styles/get-started/styles";
 import { Colors } from "@/constants/global-styles";
 import { WaveSVG } from "@/components/svgs";
 import { StrataCTA, StrataFooter } from "@/components";
