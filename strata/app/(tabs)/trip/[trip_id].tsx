@@ -7,7 +7,6 @@ import {
   deleteImageFromSupabase,
   getTripByID,
   pushChanges,
-  uploadImageToSupabase,
   uploadTicketToSupabase,
 } from "@/utils/StrataApiService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
@@ -19,6 +18,9 @@ import { StrataHeader } from "@/components/strata-header/StrataHeader";
 import { ArrowIcon } from "@/components/icons/ui-core/ArrowIcon";
 import { Colors } from "@/constants/global-styles";
 import * as Crypto from "expo-crypto";
+import { StrataLocationGroup } from "@/components/strata-location-group/StrataRadioButtonGroup";
+import { StrataSmallButton } from "@/components/strata-small-button/StrataButton";
+import { TreePalmIcon } from "@/components/icons";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -99,20 +101,26 @@ export default function Trip() {
         );
       }
 
-      return (
-        <View>
-          {locations.map((loc: any) => (
-            <Text key={loc.location_id}>{loc.name}</Text>
-          ))}
-        </View>
-      );
+      return <StrataLocationGroup locations={locations} />;
     }
 
     if (currentTab.startsWith("Day")) {
       const dayNumber = parseInt(currentTab.split(" ")[1], 10);
-      const dayLocations = locations.filter(
-        (loc: any) => loc.day === dayNumber,
-      );
+
+      const dayLocations = locations
+        .filter((loc: any) => loc.day === dayNumber)
+        .sort((a: any, b: any) => {
+          if (!a.scheduled_time && !b.scheduled_time) return 0;
+
+          if (!a.scheduled_time) return 1;
+
+          if (!b.scheduled_time) return -1;
+
+          return (
+            new Date(a.scheduled_time).getTime() -
+            new Date(b.scheduled_time).getTime()
+          );
+        });
 
       if (dayLocations.length === 0) {
         return (
@@ -133,13 +141,7 @@ export default function Trip() {
         );
       }
 
-      return (
-        <View>
-          {dayLocations.map((loc: any) => (
-            <Text key={loc.location_id}>{loc.name}</Text>
-          ))}
-        </View>
-      );
+      return <StrataLocationGroup locations={dayLocations} />;
     }
 
     return null;
@@ -148,6 +150,7 @@ export default function Trip() {
   const createSpot = async (data: any) => {
     let finalTicketUrl = null;
     let ticketWasUploaded = false;
+    let formattedTimestamp = data.scheduled_time;
 
     try {
       if (data.ticket_url) {
@@ -158,12 +161,14 @@ export default function Trip() {
         ticketWasUploaded = true;
       }
 
-      const spotDate = new Date(trip.start_date);
-      spotDate.setDate(spotDate.getDate() + (data.day - 1));
-      const [hours, minutes] = data.scheduled_time.split(":");
-      spotDate.setHours(Number(hours), Number(minutes), 0, 0);
-      const pad = (n: number) => n.toString().padStart(2, "0");
-      const formattedTimestamp = `${spotDate.getFullYear()}-${pad(spotDate.getMonth() + 1)}-${pad(spotDate.getDate())}T${pad(spotDate.getHours())}:${pad(spotDate.getMinutes())}:00.000Z`;
+      if (data.scheduled_time) {
+        const spotDate = new Date(trip.start_date);
+        spotDate.setDate(spotDate.getDate() + (data.day - 1));
+        const [hours, minutes] = data.scheduled_time.split(":");
+        spotDate.setHours(Number(hours), Number(minutes), 0, 0);
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        formattedTimestamp = `${spotDate.getFullYear()}-${pad(spotDate.getMonth() + 1)}-${pad(spotDate.getDate())}T${pad(spotDate.getHours())}:${pad(spotDate.getMinutes())}:00.000Z`;
+      }
 
       const newLocationId = Crypto.randomUUID();
 
@@ -212,9 +217,32 @@ export default function Trip() {
     setisCreating(false);
   }
 
+  const shouldShowAddSpotButton = (currentTab: string, locations: any[]) => {
+    if (!locations || locations.length === 0) return false;
+
+    if (currentTab === "Itinerary") return true;
+
+    if (currentTab.startsWith("Day")) {
+      const dayNumber = parseInt(currentTab.split(" ")[1], 10);
+      return locations.some((loc: any) => loc.day === dayNumber);
+    }
+
+    return false;
+  };
+
   return !isCreating ? (
     <View style={styles.page}>
-      {trip && <TripHeader trip={trip} origin={origin} />}
+      <Tabs.Screen
+        options={{
+          tabBarStyle: isCreating
+            ? { display: "flex" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
+      {trip && (
+        <TripHeader trip={trip} origin={origin} members={trip.members} />
+      )}
 
       <StrataTab
         classname={styles.tabContainer}
@@ -224,6 +252,19 @@ export default function Trip() {
       />
 
       {renderTabContent()}
+
+      {shouldShowAddSpotButton(currentTab, trip?.locations || []) && (
+        <StrataSmallButton
+          text="Add Spot"
+          icon={
+            <TreePalmIcon
+              color={Colors.white}
+              classname={{ aspectRatio: 1, width: 18 }}
+            />
+          }
+          onPress={() => setisCreating(!isCreating)}
+        />
+      )}
     </View>
   ) : (
     <View style={[styles.page, { paddingHorizontal: 40 }]}>
@@ -247,7 +288,7 @@ export default function Trip() {
       />
 
       <SpotCreationForm
-        days={days}
+        days={currentTab.startsWith("Day") ? days : 1}
         selectedDay={
           currentTab.startsWith("Day")
             ? parseInt(currentTab.split(" ")[1], 10)

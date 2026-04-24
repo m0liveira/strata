@@ -318,7 +318,6 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     isStepThreeValid,
   ]);
 
-  // #FIXME: when creating trip without start_date, it sets the dates to 1970 instead of null
   // #FIXME: Trip creation form scrolls infinitely...
 
   return (

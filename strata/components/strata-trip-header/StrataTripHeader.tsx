@@ -18,6 +18,7 @@ type TripHeaderProps = {
   classname?: StyleProp<ViewStyle>;
   trip: Trip;
   origin?: string;
+  members: any[];
   onPress?: () => void;
 };
 
@@ -41,13 +42,15 @@ export function TripHeader(props: TripHeaderProps) {
 
   const isCurrent = startDate <= today && endDate >= today;
 
+  const isOnlineUrl = props.trip.banner && props.trip.banner.startsWith("http");
+
+  const imageSource = isOnlineUrl
+    ? { uri: props.trip.banner }
+    : require("@/assets/images/default-banner.png");
+
   return (
     <View style={styles.header}>
-      <Image
-        source={{ uri: props.trip.banner }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      <Image source={imageSource} style={styles.image} resizeMode="cover" />
 
       <LinearGradient
         colors={["transparent", "rgba(0,0,0,0.85)"]}
@@ -83,9 +86,11 @@ export function TripHeader(props: TripHeaderProps) {
             <Text style={[styles.title]}>{props.trip.name}</Text>
           </View>
 
-          <Pressable style={styles.icon} onPress={() => {}}>
-            <ChatBubbleIcon color={Colors.white} classname={styles.icon} />
-          </Pressable>
+          {props.members.length > 1 && (
+            <Pressable style={styles.icon} onPress={() => {}}>
+              <ChatBubbleIcon color={Colors.white} classname={styles.icon} />
+            </Pressable>
+          )}
         </View>
       </View>
     </View>

@@ -88,8 +88,12 @@ export default function MyTrips() {
 
       const formattedTripData = {
         ...tripCoreData,
-        start_date: new Date(tripCoreData.start_date).toISOString(),
-        end_date: new Date(tripCoreData.end_date).toISOString(),
+        start_date: tripCoreData.start_date
+          ? new Date(tripCoreData.start_date).toISOString()
+          : tripCoreData.start_date,
+        end_date: tripCoreData.end_date
+          ? new Date(tripCoreData.end_date).toISOString()
+          : tripCoreData.end_date,
       };
 
       const myChanges = {
@@ -168,10 +172,16 @@ export default function MyTrips() {
 
   const upcomingTrips = trips
     .filter((trip) => {
+      if (!trip.start_date || !trip.end_date) return true;
+
       const endDate = new Date(trip.end_date);
       return endDate >= today;
     })
     .sort((a, b) => {
+      if (!a.start_date && !b.start_date) return 0;
+      if (!a.start_date) return 1;
+      if (!b.start_date) return -1;
+
       return (
         new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
       );
@@ -179,6 +189,8 @@ export default function MyTrips() {
 
   const pastTrips = trips
     .filter((trip) => {
+      if (!trip.start_date || !trip.end_date) return false;
+
       const endDate = new Date(trip.end_date);
       return endDate < today;
     })

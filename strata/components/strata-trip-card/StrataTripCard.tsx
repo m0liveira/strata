@@ -3,12 +3,10 @@ import {
   Pressable,
   StyleProp,
   Text,
-  TextStyle,
   ViewStyle,
   Platform,
   View,
   Image,
-  ImageSourcePropType,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
@@ -54,6 +52,12 @@ export function TripCard(props: TripCardProps) {
 
   const isCurrent = startDate <= today && endDate >= today;
 
+  const isOnlineUrl = props.trip.banner && props.trip.banner.startsWith("http");
+
+  const imageSource = isOnlineUrl
+    ? { uri: props.trip.banner }
+    : require("@/assets/images/default-banner.png");
+
   return (
     <Pressable
       android_ripple={{
@@ -70,7 +74,7 @@ export function TripCard(props: TripCardProps) {
     >
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: props.trip.banner }}
+          source={imageSource}
           style={styles.image}
           resizeMode="cover"
         />
@@ -83,7 +87,9 @@ export function TripCard(props: TripCardProps) {
         <View style={styles.tripContainer}>
           <View style={styles.textContainer}>
             <Text style={[styles.date, isCurrent && styles.current]}>
-              {new Date(props.trip.start_date).toLocaleDateString("pt-PT")}
+              {props.trip.start_date
+                ? new Date(props.trip.start_date).toLocaleDateString("pt-PT")
+                : "TBD"}
             </Text>
 
             <Text style={[styles.title]}>{props.trip.name}</Text>

@@ -13,3 +13,15 @@
 //   @readonly @date('created_at') created_at!: Date;
 //   @readonly @date('updated_at') updated_at!: Date;
 // }
+
+export type Location = {
+    location_id: string;
+    trip_id: string;
+    name: string;
+    scheduled_time?: string | Date | null;
+    day: number;
+    ticket_url?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    deleted_at?: string;
+}

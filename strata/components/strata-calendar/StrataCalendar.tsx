@@ -17,22 +17,29 @@ export function StrataCalendar(props: StrataCalendarProps) {
   const onDayPress = (day: any) => {
     const dateString = day.dateString;
 
-    if (dateString === props.startDate) {
-      props.onRangeChange({ start: null, end: null });
+    if (!props.startDate) {
+      props.onRangeChange({ start: dateString, end: dateString });
       return;
     }
 
-    if (!props.startDate || (props.startDate && props.endDate)) {
-      props.onRangeChange({ start: dateString, end: null });
+    if (props.startDate && props.endDate && props.startDate !== props.endDate) {
+      props.onRangeChange({ start: dateString, end: dateString });
       return;
     }
 
-    if (isBefore(parseISO(dateString), parseISO(props.startDate))) {
-      props.onRangeChange({ start: dateString, end: null });
-      return;
-    }
+    if (props.startDate && props.endDate && props.startDate === props.endDate) {
+      if (dateString === props.startDate) {
+        props.onRangeChange({ start: null, end: null });
+        return;
+      }
 
-    props.onRangeChange({ start: props.startDate, end: dateString });
+      if (isBefore(parseISO(dateString), parseISO(props.startDate))) {
+        props.onRangeChange({ start: dateString, end: dateString });
+        return;
+      }
+
+      props.onRangeChange({ start: props.startDate, end: dateString });
+    }
   };
 
   const getMarkedDates = () => {
