@@ -1,14 +1,21 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useState, useCallback, useEffect } from "react";
 import { router, useFocusEffect, Tabs } from "expo-router";
 import * as Crypto from "expo-crypto";
-import { styles } from "@/styles/my-trips/styles";
+import { styles } from "@/styles/dashboard/styles";
 import { user } from "@/utils/userService";
 import { EmptyState } from "@/app/pages/empty-state";
 import { Colors } from "@/constants/global-styles";
 import { StrataHeader, StrataButton } from "@/components";
-import { ArrowIcon, BellIcon, ChatBubbleIcon } from "@/components/icons";
+import {
+  AddUserIcon,
+  ArrowIcon,
+  BellIcon,
+  ChatBubbleIcon,
+  PdfIcon,
+  StrategyIcon,
+} from "@/components/icons";
 import { TripCreationOptions, TripCreationForm } from "@/components/features/";
 import { screenOptions } from "../_layout";
 import {
@@ -18,8 +25,13 @@ import {
   pushChanges,
   inviteToTrip,
   getTripByID,
+  ExportTrip,
 } from "@/utils/StrataApiService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
+import { StrataTripOverviewCard } from "@/components/strata-trip-overview-card/StrataTripOverviewCard";
+import { StrataDocumentsCard } from "@/components/strata-documents-card/StrataDocumentsCard";
+import { ClockForwardIcon } from "@/components/icons/ui-core/ClockForwardIcon";
+import { StrataModal } from "@/components/strata-modal/StrataModal";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -27,6 +39,8 @@ export default function MyTrips() {
   const [creationStage, setCreationStage] = useState(0);
   const [currentTab, setCurrentTab] = useState("Overview");
   const [trip, setTrip] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentAction, setCurrentAction] = useState("");
 
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
@@ -97,6 +111,7 @@ export default function MyTrips() {
         setisCreating(false);
         setisManual(true);
         setCreationStage(0);
+        setModalVisible(false);
       };
     }, []),
   );
@@ -209,6 +224,51 @@ export default function MyTrips() {
     }
   }
 
+  // #TODO: Add quick actions functionalities
+  const quickActions = [
+    {
+      title: "Plan B",
+      icon: <StrategyIcon classname={styles.bigIcon} color={Colors.coral500} />,
+      onPress: () => {
+        setModalVisible(true);
+        setCurrentAction("Plan B");
+      },
+      classname: styles.coralBg,
+    },
+    {
+      title: "Shift Trip",
+      icon: (
+        <ClockForwardIcon
+          classname={[styles.bigIcon, { width: 24 }]}
+          color={Colors.coral500}
+        />
+      ),
+      onPress: () => {
+        setModalVisible(true);
+        setCurrentAction("Shift Trip");
+      },
+      classname: styles.coralBg,
+    },
+    {
+      title: "Invite",
+      icon: <AddUserIcon classname={styles.bigIcon} color={Colors.blue500} />,
+      onPress: () => {
+        setModalVisible(true);
+        setCurrentAction("Invite");
+      },
+      classname: styles.blueBg,
+    },
+    {
+      title: "Export",
+      icon: <PdfIcon classname={styles.bigIcon} color={Colors.blue500} />,
+      onPress: () => {
+        setModalVisible(true);
+        setCurrentAction("Export");
+      },
+      classname: styles.blueBg,
+    },
+  ];
+
   function renderTabContent() {
     // #TODO: Add real map and itinerary content here. For now, just placeholders.
     if (currentTab === "Map") {
@@ -216,68 +276,84 @@ export default function MyTrips() {
     }
 
     if (currentTab === "Overview") {
-      //   if (locations.length === 0) {
-      //     return (
-      //       <View style={styles.emptyStateContainer}>
-      //         <EmptyState
-      //           globeClassName={styles.globe}
-      //           buttons={[
-      //             <StrataButton
-      //               key="add-spot"
-      //               title="Add a Spot"
-      //               text="What do you wish to see?"
-      //               imageSource={require("@/assets/images/pin.png")}
-      //               onPress={() => setisCreating(true)}
-      //             />,
-      //           ]}
-      //         />
-      //       </View>
-      //     );
-      //   }
-      //   return <StrataLocationGroup locations={locations} />;
+      return (
+        <>
+          <View style={styles.quickActions}>
+            {quickActions.map((quickAction) => {
+              return (
+                <View
+                  key={quickAction.title}
+                  style={{ alignItems: "center", gap: 8 }}
+                >
+                  <Pressable
+                    style={[styles.quickAction, quickAction.classname]}
+                    onPress={quickAction.onPress}
+                  >
+                    {quickAction.icon}
+                  </Pressable>
+
+                  <Text style={styles.qAText}>{quickAction.title}</Text>
+                </View>
+              );
+            })}
+          </View>
+
+          <StrataTripOverviewCard
+            trip={trip}
+            locations={trip?.locations || []}
+            onPress={() =>
+              router.push({
+                pathname: "/trip/[trip_id]",
+                params: {
+                  trip_id: trip.trip_id,
+                  origin: "dashboard",
+                },
+              })
+            }
+          />
+
+          <StrataDocumentsCard
+            locations={trip?.locations || []}
+            tripStartDate={trip.start_date}
+            classname={{ marginBottom: 40 }}
+          />
+        </>
+      );
     }
 
-    // if (currentTab.startsWith("Day")) {
-    //   const dayNumber = parseInt(currentTab.split(" ")[1], 10);
-
-    //   const dayLocations = locations
-    //     .filter((loc: any) => loc.day === dayNumber)
-    //     .sort((a: any, b: any) => {
-    //       if (!a.scheduled_time && !b.scheduled_time) return 0;
-
-    //       if (!a.scheduled_time) return 1;
-
-    //       if (!b.scheduled_time) return -1;
-
-    //       return (
-    //         new Date(a.scheduled_time).getTime() -
-    //         new Date(b.scheduled_time).getTime()
-    //       );
-    //     });
-
-    //   if (dayLocations.length === 0) {
-    //     return (
-    //       <View style={styles.emptyStateContainer}>
-    //         <EmptyState
-    //           globeClassName={styles.globe}
-    //           buttons={[
-    //             <StrataButton
-    //               key="add-spot"
-    //               title="Add a Spot"
-    //               text="What do you wish to see?"
-    //               imageSource={require("@/assets/images/pin.png")}
-    //               onPress={() => setisCreating(true)}
-    //             />,
-    //           ]}
-    //         />
-    //       </View>
-    //     );
-    //   }
-
-    //   return <StrataLocationGroup locations={dayLocations} />;
-    // }
-
     return null;
+  }
+
+  function renderModalContent() {
+    switch (currentAction) {
+      case "Plan B":
+        return <Text>Plan b</Text>;
+
+      case "Shift Trip":
+        return <Text>Shift Trip</Text>;
+
+      case "Invite":
+        return <Text>Invite</Text>;
+
+      case "Export":
+        return (
+          <StrataButton
+            title={trip.name}
+            text="Export full trip!"
+            imageSource={require("@/assets/images/pdf.png")}
+            onPress={() => {
+              try {
+                ExportTrip(trip.trip_id);
+              } catch (error) {
+                alert(error);
+              }
+            }}
+          />
+        );
+
+      default:
+        break;
+    }
   }
 
   return (
@@ -348,6 +424,13 @@ export default function MyTrips() {
               />
 
               {renderTabContent()}
+
+              <StrataModal
+                isVisible={modalVisible}
+                onClose={() => setModalVisible(false)}
+              >
+                {renderModalContent()}
+              </StrataModal>
             </ScrollView>
           )}
         </>

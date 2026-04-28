@@ -1,5 +1,7 @@
 // import { synchronize } from '@nozbe/watermelondb/sync';
 // import { database } from '@/types/models/database';
+import { File, Paths } from 'expo-file-system';
+import { isAvailableAsync, shareAsync } from 'expo-sharing';
 import { Form } from "@/types/common";
 import { user } from "./userService";
 
@@ -286,6 +288,34 @@ export const pushChanges = async (changes: any) => {
         return true;
     } catch (error) {
         console.error("Error pushing changes:", error);
+        throw error;
+    }
+};
+
+export const ExportTrip = async (tripId: string) => {
+    try {
+        const url = `${API_URL}/trips/${tripId}/pdf`;
+
+        const fileName = `strata-itinerary-${Date.now()}.pdf`;
+        const file = new File(Paths.document, fileName);
+
+        await File.downloadFileAsync(url, file, {
+            headers: {
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        const canShare = await isAvailableAsync();
+        if (canShare) {
+            await shareAsync(file.uri, {
+                mimeType: 'application/pdf',
+                dialogTitle: 'Save your trip itinerary',
+            });
+        }
+
+        return file.uri;
+    } catch (error) {
+        console.error("Download error:", error);
         throw error;
     }
 };

@@ -38,5 +38,36 @@ export const styles = StyleSheet.create({
     },
     createTripButton: {
         marginBottom: 75,
+    },
+    quickActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        minHeight: 86,
+    },
+    quickAction: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: BorderRadius.full,
+        borderWidth: 1,
+        aspectRatio: 1,
+        width: 62,
+    },
+    bigIcon: {
+        aspectRatio: 1,
+        width: 30,
+    },
+    coralBg: {
+        backgroundColor: Colors.coral100,
+        borderColor: Colors.coral200
+    },
+    blueBg: {
+        backgroundColor: Colors.blue100,
+        borderColor: Colors.blue200
+    },
+    qAText: {
+        ...Typography.labelM,
+        color: Colors.grey600,
     }
 });
