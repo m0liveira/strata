@@ -69,5 +69,18 @@ export const styles = StyleSheet.create({
     qAText: {
         ...Typography.labelM,
         color: Colors.grey600,
+    },
+    ctaText: {
+        ...Typography.cta,
+        color: Colors.white,
+    },
+    ctaDisabled: {
+        backgroundColor: Colors.grey100,
+        borderColor: Colors.grey200
+    },
+    smallIcon: {
+        aspectRatio: 1,
+        height: 20,
+        marginLeft: 10
     }
 });

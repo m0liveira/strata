@@ -7,13 +7,17 @@ import { styles } from "@/styles/dashboard/styles";
 import { user } from "@/utils/userService";
 import { EmptyState } from "@/app/pages/empty-state";
 import { Colors } from "@/constants/global-styles";
-import { StrataHeader, StrataButton } from "@/components";
+import { StrataHeader, StrataButton, StrataCTA } from "@/components";
 import {
   AddUserIcon,
   ArrowIcon,
   BellIcon,
   ChatBubbleIcon,
+  MailIcon,
+  MinusIcon,
   PdfIcon,
+  PlusIcon,
+  ShareIcon,
   StrategyIcon,
 } from "@/components/icons";
 import { TripCreationOptions, TripCreationForm } from "@/components/features/";
@@ -32,6 +36,8 @@ import { StrataTripOverviewCard } from "@/components/strata-trip-overview-card/S
 import { StrataDocumentsCard } from "@/components/strata-documents-card/StrataDocumentsCard";
 import { ClockForwardIcon } from "@/components/icons/ui-core/ClockForwardIcon";
 import { StrataModal } from "@/components/strata-modal/StrataModal";
+import { StrataSocialList } from "@/components/strata-social-list/StrataSocialList";
+import { PublicUser } from "@/types/models/user-model";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -41,6 +47,8 @@ export default function MyTrips() {
   const [trip, setTrip] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentAction, setCurrentAction] = useState("");
+  const [friends, setFriends] = useState<PublicUser[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
@@ -55,6 +63,8 @@ export default function MyTrips() {
         try {
           const profiles = await getUsersData(user.friends);
           user.friends_profiles = profiles;
+
+          setFriends(profiles);
         } catch (error) {
           console.error("Error:", error);
         }
@@ -112,6 +122,7 @@ export default function MyTrips() {
         setisManual(true);
         setCreationStage(0);
         setModalVisible(false);
+        setSelectedUsers([]);
       };
     }, []),
   );
@@ -208,6 +219,8 @@ export default function MyTrips() {
     }
   }
 
+  // #TODO: Put this repetetive functions from my-trips page in a utils file and call them here
+
   function renderCreationStage() {
     switch (creationStage) {
       case 0:
@@ -224,7 +237,6 @@ export default function MyTrips() {
     }
   }
 
-  // #TODO: Add quick actions functionalities
   const quickActions = [
     {
       title: "Plan B",
@@ -324,6 +336,16 @@ export default function MyTrips() {
     return null;
   }
 
+  const toggleUser = (userId: number) => {
+    const idStr = String(userId);
+    setSelectedUsers((prev) =>
+      prev.includes(idStr)
+        ? prev.filter((id) => id !== idStr)
+        : [...prev, idStr],
+    );
+  };
+
+  // #TODO: Add quick actions functionalities
   function renderModalContent() {
     switch (currentAction) {
       case "Plan B":
@@ -333,7 +355,76 @@ export default function MyTrips() {
         return <Text>Shift Trip</Text>;
 
       case "Invite":
-        return <Text>Invite</Text>;
+        return (
+          <>
+            <StrataSocialList
+              users={friends}
+              selectedIds={selectedUsers}
+              onUserPress={(user) => toggleUser(user.user_id)}
+              renderRightIcon={(user, isSelected) =>
+                isSelected ? (
+                  <MinusIcon
+                    classname={styles.bigIcon}
+                    color={Colors.coral500}
+                  />
+                ) : (
+                  <PlusIcon
+                    classname={styles.bigIcon}
+                    color={Colors.primaryDark}
+                  />
+                )
+              }
+            />
+
+            <StrataCTA
+              classname={[
+                styles.button,
+                styles.ctaDisabled,
+                { marginTop: 80, marginBottom: 0 },
+              ]}
+              text="Invite Link"
+              textclassname={[styles.ctaText, { color: Colors.primaryDark }]}
+              icon={
+                <ShareIcon
+                  color={Colors.primaryDark}
+                  classname={styles.smallIcon}
+                />
+              }
+              isDisabled={true}
+              onPress={async () => {}}
+            />
+
+            <StrataCTA
+              classname={[
+                styles.button,
+                selectedUsers.length === 0 && styles.ctaDisabled,
+                { marginTop: 24, marginBottom: 0 },
+              ]}
+              text="Send Invite"
+              textclassname={[
+                styles.ctaText,
+                selectedUsers.length === 0 && { color: Colors.primaryDark },
+              ]}
+              icon={
+                <MailIcon
+                  color={
+                    selectedUsers.length === 0
+                      ? Colors.primaryDark
+                      : Colors.white
+                  }
+                  classname={styles.smallIcon}
+                />
+              }
+              isDisabled={selectedUsers.length === 0}
+              onPress={async () => {
+                for (const user of selectedUsers) {
+                  await inviteToTrip(trip.trip_id, Number(user));
+                  // #TODO: Add notification for users added or errors
+                }
+              }}
+            />
+          </>
+        );
 
       case "Export":
         return (
