@@ -12,7 +12,9 @@ import {
   AddUserIcon,
   ArrowIcon,
   BellIcon,
+  CarretIcon,
   ChatBubbleIcon,
+  ClockIcon,
   MailIcon,
   MinusIcon,
   PdfIcon,
@@ -38,6 +40,12 @@ import { ClockForwardIcon } from "@/components/icons/ui-core/ClockForwardIcon";
 import { StrataModal } from "@/components/strata-modal/StrataModal";
 import { StrataSocialList } from "@/components/strata-social-list/StrataSocialList";
 import { PublicUser } from "@/types/models/user-model";
+import {
+  getDayLabel,
+  getMidnight,
+  getTimeUntil,
+} from "@/utils/generalFunctions";
+import { StrataSchedule } from "@/components/strata-schedule/StrataSchedule";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -49,6 +57,11 @@ export default function MyTrips() {
   const [currentAction, setCurrentAction] = useState("");
   const [friends, setFriends] = useState<PublicUser[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedMethod, setSelectedMethod] = useState("Shift All");
+  const [hour, setHour] = useState("00");
+  const [minute, setMinute] = useState("30");
+  const [selectedSpot, setSelectedSpot] = useState<any>({});
+  const [isOpened, setIsOpened] = useState(false);
 
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
@@ -123,6 +136,11 @@ export default function MyTrips() {
         setCreationStage(0);
         setModalVisible(false);
         setSelectedUsers([]);
+        setSelectedMethod("Shift All");
+        setHour("00");
+        setMinute("30");
+        setSelectedSpot({});
+        setIsOpened(false);
       };
     }, []),
   );
@@ -281,12 +299,16 @@ export default function MyTrips() {
     },
   ];
 
-  function renderTabContent() {
-    // #TODO: Add real map and itinerary content here. For now, just placeholders.
-    if (currentTab === "Map") {
-      return <Text>Hello World</Text>;
-    }
+  const toggleUser = (userId: number) => {
+    const idStr = String(userId);
+    setSelectedUsers((prev) =>
+      prev.includes(idStr)
+        ? prev.filter((id) => id !== idStr)
+        : [...prev, idStr],
+    );
+  };
 
+  function renderTabContent() {
     if (currentTab === "Overview") {
       return (
         <>
@@ -333,26 +355,335 @@ export default function MyTrips() {
       );
     }
 
+    // #TODO: Add real map and itinerary content here. For now, just placeholders.
+    if (currentTab === "Map") {
+      return <Text>Hello World</Text>;
+    }
+
+    if (currentTab === "Budget") {
+      return <Text>My budget World</Text>;
+    }
+
     return null;
   }
 
-  const toggleUser = (userId: number) => {
-    const idStr = String(userId);
-    setSelectedUsers((prev) =>
-      prev.includes(idStr)
-        ? prev.filter((id) => id !== idStr)
-        : [...prev, idStr],
+  function renderShiftComponent() {
+    if (!trip?.locations || trip.locations.length === 0) {
+      return <Text>Add locations to your trip!</Text>;
+    }
+
+    const scheduledLocations = trip.locations.filter(
+      (loc: any) => loc.scheduled_time,
     );
+
+    if (scheduledLocations.length === 0) {
+      return <Text>No scheduled locations available.</Text>;
+    }
+
+    const todayMidnight = getMidnight();
+    const now = Date.now();
+
+    const locationsWithDates = scheduledLocations.map((loc: any) => {
+      const parsedDate = new Date(loc.scheduled_time);
+      return { ...loc, parsedDate };
+    });
+
+    const closestLocation =
+      locationsWithDates
+        .sort(
+          (a: any, b: any) => a.parsedDate.getTime() - b.parsedDate.getTime(),
+        )
+        .find((loc: any) => loc.parsedDate.getTime() >= now) ||
+      locationsWithDates[0];
+
+    const activeSpot =
+      selectedMethod !== "Shift All" && selectedSpot?.name
+        ? selectedSpot
+        : closestLocation;
+
+    const shiftOffset =
+      Number(hour) * 60 * 60 * 1000 + Number(minute) * 60 * 1000;
+    const shiftedDate = new Date(activeSpot.parsedDate.getTime() + shiftOffset);
+
+    return (
+      <View style={styles.shiftContainer}>
+        <View style={styles.location}>
+          <View style={styles.left}>
+            <Text style={styles.label}>
+              {getDayLabel(activeSpot.parsedDate, todayMidnight)}
+            </Text>
+
+            {selectedMethod === "Shift All" ? (
+              <Text style={styles.text}>{activeSpot.name}</Text>
+            ) : (
+              <Pressable
+                style={styles.select}
+                onPress={() => {
+                  setIsOpened(!isOpened);
+                }}
+              >
+                <Text style={styles.text}>{activeSpot.name}</Text>
+
+                <CarretIcon
+                  color={Colors.primaryDark}
+                  classname={[
+                    { aspectRatio: 1, width: 16 },
+                    isOpened && { transform: [{ rotate: "180deg" }] },
+                  ]}
+                />
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.right}>
+            <Text style={styles.label}>
+              {activeSpot.parsedDate.toLocaleTimeString("pt-PT", {
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "UTC",
+              })}
+            </Text>
+            <Text style={styles.labelM}>
+              {getTimeUntil(activeSpot.scheduled_time)}
+            </Text>
+          </View>
+
+          {isOpened && (
+            <View style={styles.optionsContainer}>
+              {locationsWithDates.map((loc: any) => {
+                return (
+                  <Pressable
+                    key={loc.location_id}
+                    style={{
+                      width: "100%",
+                      paddingVertical: 4,
+                    }}
+                    onPress={() => {
+                      setSelectedSpot(loc);
+                      setIsOpened(false);
+                    }}
+                  >
+                    <Text style={styles.options}>{loc.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        <ArrowIcon
+          color={Colors.grey300}
+          classname={{
+            aspectRatio: 1,
+            width: 32,
+            transform: [{ rotate: "-90deg" }],
+          }}
+        />
+
+        <View style={[styles.location, { marginBottom: 8 }]}>
+          <View style={styles.left}>
+            <Text style={styles.label}>
+              {getDayLabel(shiftedDate, todayMidnight)}
+            </Text>
+            <Text style={styles.text}>{activeSpot.name}</Text>
+          </View>
+
+          <View style={styles.right}>
+            <Text style={styles.label}>
+              {shiftedDate.toLocaleTimeString("pt-PT", {
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: "UTC",
+              })}
+            </Text>
+            <Text style={styles.labelM}>
+              {getTimeUntil(shiftedDate.toISOString())}
+            </Text>
+          </View>
+        </View>
+
+        <StrataSchedule
+          isScheduled={true}
+          onToggleSchedule={() => {
+            return true;
+          }}
+          hideCheckbox={true}
+          selectedHour={hour}
+          selectedMinute={minute}
+          onTimeChange={(h, m) => {
+            setHour(h);
+            setMinute(m);
+          }}
+          addLimit={true}
+        />
+      </View>
+    );
+  }
+
+  const handleShiftSubmit = async () => {
+    const shiftOffsetMs =
+      Number(hour) * 60 * 60 * 1000 + Number(minute) * 60 * 1000;
+
+    const now = Date.now();
+    const scheduledLocations = trip.locations.filter(
+      (loc: any) => loc.scheduled_time,
+    );
+
+    const closestLocation =
+      scheduledLocations
+        .map((loc: any) => {
+          const timeStr = loc.scheduled_time.endsWith("Z")
+            ? loc.scheduled_time
+            : `${loc.scheduled_time}Z`;
+          return {
+            ...loc,
+            parsedDate: new Date(timeStr),
+          };
+        })
+        .sort(
+          (a: any, b: any) => a.parsedDate.getTime() - b.parsedDate.getTime(),
+        )
+        .find((loc: any) => loc.parsedDate.getTime() >= now) ||
+      scheduledLocations[0];
+
+    const activeSpot =
+      selectedMethod === "Shift From" && selectedSpot?.name
+        ? selectedSpot
+        : closestLocation;
+
+    const targetDay = activeSpot?.day || 1;
+
+    const activeTimeStr = activeSpot.scheduled_time.endsWith("Z")
+      ? activeSpot.scheduled_time
+      : `${activeSpot.scheduled_time}Z`;
+    const thresholdTime = new Date(activeTimeStr).getTime();
+
+    const updatedLocations = trip.locations
+      .filter((loc: any) => {
+        if (!loc.scheduled_time || loc.day !== targetDay) return false;
+
+        if (selectedMethod === "Shift From") {
+          const locTimeStr = loc.scheduled_time.endsWith("Z")
+            ? loc.scheduled_time
+            : `${loc.scheduled_time}Z`;
+          return new Date(locTimeStr).getTime() >= thresholdTime;
+        }
+
+        return true;
+      })
+      .map((loc: any) => {
+        const locTimeStr = loc.scheduled_time.endsWith("Z")
+          ? loc.scheduled_time
+          : `${loc.scheduled_time}Z`;
+        const originalDate = new Date(locTimeStr);
+        const newDate = new Date(originalDate.getTime() + shiftOffsetMs);
+
+        const originalMidnight = new Date(originalDate).setUTCHours(0, 0, 0, 0);
+        const newMidnight = new Date(newDate).setUTCHours(0, 0, 0, 0);
+
+        const diffDays = Math.round(
+          (newMidnight - originalMidnight) / (1000 * 60 * 60 * 24),
+        );
+
+        const { deleted_at, ...cleanLoc } = loc;
+
+        return {
+          ...cleanLoc,
+          scheduled_time: newDate.toISOString(),
+          day: (cleanLoc.day || 1) + diffDays,
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+    try {
+      await pushChanges({
+        locations: {
+          created: [],
+          updated: updatedLocations,
+          deleted: [],
+        },
+      });
+
+      setModalVisible(false);
+      setSelectedSpot({});
+      setIsOpened(false);
+
+      // #TODO: Update locations time in the overview screen
+    } catch (error) {
+      console.error("Error while shifting schedule:", error);
+    }
   };
 
-  // #TODO: Add quick actions functionalities
+  // #TODO: Add Plan B action functionality
   function renderModalContent() {
     switch (currentAction) {
       case "Plan B":
         return <Text>Plan b</Text>;
 
       case "Shift Trip":
-        return <Text>Shift Trip</Text>;
+        const shiftButtons = [
+          { title: "Shift All", text: "Delay full schedule" },
+          {
+            title: "Shift From",
+            text: "Delay from specific time from the schedule",
+          },
+        ];
+
+        return (
+          <>
+            {shiftButtons.map((btn) => (
+              <Pressable
+                key={btn.title}
+                style={[
+                  styles.selectable,
+                  selectedMethod === btn.title && {
+                    backgroundColor: Colors.coral100,
+                    borderColor: Colors.coral200,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedMethod(btn.title);
+                  setIsOpened(false);
+                  setSelectedSpot({});
+                }}
+              >
+                <Text
+                  style={[
+                    styles.selectableTitle,
+                    selectedMethod === btn.title && {
+                      color: Colors.coral900,
+                    },
+                  ]}
+                >
+                  {btn.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.selectableText,
+                    selectedMethod === btn.title && {
+                      color: Colors.coral400,
+                    },
+                  ]}
+                >
+                  {btn.text}
+                </Text>
+              </Pressable>
+            ))}
+
+            {renderShiftComponent()}
+
+            <StrataCTA
+              classname={[styles.button, { marginTop: 48, marginBottom: 0 }]}
+              text="Save"
+              textclassname={[styles.ctaText]}
+              icon={
+                <ClockIcon color={Colors.white} classname={styles.smallIcon} />
+              }
+              isDisabled={false}
+              onPress={async () => handleShiftSubmit()}
+            />
+          </>
+        );
 
       case "Invite":
         return (
@@ -419,6 +750,9 @@ export default function MyTrips() {
               onPress={async () => {
                 for (const user of selectedUsers) {
                   await inviteToTrip(trip.trip_id, Number(user));
+
+                  setSelectedUsers([]);
+                  setModalVisible(false);
                   // #TODO: Add notification for users added or errors
                 }
               }}
@@ -435,6 +769,7 @@ export default function MyTrips() {
             onPress={() => {
               try {
                 ExportTrip(trip.trip_id);
+                setModalVisible(false);
               } catch (error) {
                 alert(error);
               }

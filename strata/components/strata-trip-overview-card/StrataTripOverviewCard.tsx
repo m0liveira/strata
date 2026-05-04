@@ -13,18 +13,13 @@ import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { ArrowIcon, PinIcon } from "@/components/icons";
 import { Trip } from "@/types/models/trip-model";
+import { getDayLabel, getMidnight, getTimeUntil } from "@/utils/generalFunctions";
 
 type TripOverviewCardProps = {
   classname?: StyleProp<ViewStyle>;
   trip: Trip;
   locations: any[];
   onPress: () => void;
-};
-
-const getMidnight = (date: Date | string | number = new Date()) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
 };
 
 const getLocationDate = (loc: any, tripStartDate: string) => {
@@ -34,36 +29,6 @@ const getLocationDate = (loc: any, tripStartDate: string) => {
   const baseDate = new Date(tripStartDate);
   baseDate.setDate(baseDate.getDate() + ((loc.day || 1) - 1));
   return baseDate;
-};
-
-const getDayLabel = (locationDate: Date, todayMidnight: Date) => {
-  const targetMidnight = getMidnight(locationDate);
-  const diffDays = Math.round(
-    (targetMidnight.getTime() - todayMidnight.getTime()) /
-      (1000 * 60 * 60 * 24),
-  );
-
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  return locationDate.toLocaleDateString("pt-PT", {
-    day: "2-digit",
-    month: "short",
-  });
-};
-
-const getTimeUntil = (scheduledTime: string | null) => {
-  if (!scheduledTime) return "TBD";
-
-  const diff = new Date(scheduledTime).getTime() - Date.now();
-  if (diff < 0) return "Passed";
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (days > 0) return `In ${days}d`;
-  if (hours > 0) return `In ${hours}:${mins.toString().padStart(2, "0")}`;
-  return `In ${mins}m`;
 };
 
 export function StrataTripOverviewCard({
@@ -144,6 +109,7 @@ export function StrataTripOverviewCard({
                   ? loc.parsedDate.toLocaleTimeString("pt-PT", {
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: "UTC",
                     })
                   : "TBD"}
               </Text>

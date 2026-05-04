@@ -82,5 +82,85 @@ export const styles = StyleSheet.create({
         aspectRatio: 1,
         height: 20,
         marginLeft: 10
+    },
+    selectable: {
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        backgroundColor: Colors.grey100,
+        borderColor: Colors.grey200,
+        borderWidth: 1,
+        borderRadius: BorderRadius.md,
+        width: '100%',
+        height: 67,
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        marginBottom: 24
+    },
+    selectableTitle: {
+        ...Typography.h3,
+        color: Colors.primaryDark,
+    },
+    selectableText: {
+        ...Typography.bodyS,
+        color: Colors.grey400,
+    },
+    shiftContainer: {
+        flexDirection: 'column',
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 8,
+    },
+    location: {
+        flexDirection: 'row',
+        justifyContent: "space-between",
+        alignItems: "stretch",
+        flexWrap: 'wrap',
+        borderRadius: BorderRadius.md,
+        boxShadow: '0 0 4px rgba(0, 0, 0, 0.1)',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        width: '80%',
+        gap: 24,
+    },
+    left: {
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+    },
+    right: {
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        paddingBottom: 4,
+    },
+    text: {
+        ...Typography.bodyL,
+        color: Colors.primaryDark
+    },
+    labelM: {
+        ...Typography.labelM,
+        color: Colors.primaryDark
+    },
+    label: {
+        ...Typography.labelS,
+        color: Colors.grey400
+    },
+    select: {
+        flexDirection: 'row',
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 16
+    },
+    optionsContainer: {
+        flexDirection: 'column',
+        justifyContent: "center",
+        alignItems: "flex-start",
+        borderTopWidth: 1,
+        borderTopColor: Colors.grey200,
+        width: '100%',
+        paddingTop: 4
+    },
+    options: {
+        ...Typography.bodyM,
+        color: Colors.grey400,
     }
 });

@@ -164,21 +164,37 @@ type StrataScheduleProps = {
   classname?: StyleProp<ViewStyle>;
   isScheduled: boolean;
   onToggleSchedule: (val: boolean) => void;
+  hideCheckbox?: boolean;
   selectedHour: string;
   selectedMinute: string;
   onTimeChange: (hour: string, minute: string) => void;
+  addLimit?: boolean;
 };
 
 export function StrataSchedule(props: StrataScheduleProps) {
   const times = useMemo(() => {
     const arr = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m++) {
-        arr.push(
-          `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}`,
-        );
+
+    if (!props.addLimit) {
+      for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m++) {
+          arr.push(
+            `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}`,
+          );
+        }
+      }
+    } else {
+      for (let h = 0; h <= 4; h++) {
+        const maxM = h === 4 ? 0 : 59;
+
+        for (let m = 0; m <= maxM; m++) {
+          arr.push(
+            `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}`,
+          );
+        }
       }
     }
+
     return arr;
   }, []);
 
@@ -186,18 +202,23 @@ export function StrataSchedule(props: StrataScheduleProps) {
 
   return (
     <View style={[styles.container, props.classname]}>
-      <Pressable
-        style={styles.header}
-        onPress={() => props.onToggleSchedule(!props.isScheduled)}
-      >
+      {!props.hideCheckbox && (
         <Pressable
-          style={[styles.checkbox, props.isScheduled && styles.checkboxActive]}
+          style={styles.header}
           onPress={() => props.onToggleSchedule(!props.isScheduled)}
         >
-          {props.isScheduled && <CheckmarkIcon color={Colors.white} />}
+          <Pressable
+            style={[
+              styles.checkbox,
+              props.isScheduled && styles.checkboxActive,
+            ]}
+            onPress={() => props.onToggleSchedule(!props.isScheduled)}
+          >
+            {props.isScheduled && <CheckmarkIcon color={Colors.white} />}
+          </Pressable>
+          <Text style={styles.title}>Set Scheduled time</Text>
         </Pressable>
-        <Text style={styles.title}>Set Scheduled time</Text>
-      </Pressable>
+      )}
 
       {props.isScheduled && (
         <View style={styles.pickerContainer}>

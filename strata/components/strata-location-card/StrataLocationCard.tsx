@@ -5,7 +5,6 @@ import {
   View,
   StyleProp,
   ViewStyle,
-  TextStyle,
 } from "react-native";
 import { Colors } from "@/constants/global-styles";
 import { styles } from "./styles";
@@ -29,6 +28,7 @@ export function StrataLocationCard(props: LocationCardProps) {
     return date.toLocaleTimeString("pt-PT", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "UTC",
     });
   }
 
