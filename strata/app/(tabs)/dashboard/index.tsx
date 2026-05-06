@@ -46,6 +46,7 @@ import {
   getTimeUntil,
 } from "@/utils/generalFunctions";
 import { StrataSchedule } from "@/components/strata-schedule/StrataSchedule";
+import { BudgetScreen } from "@/components/screens/budget-screen/BudgetScreen";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -361,7 +362,7 @@ export default function MyTrips() {
     }
 
     if (currentTab === "Budget") {
-      return <Text>My budget World</Text>;
+      return <BudgetScreen trip={trip} />;
     }
 
     return null;
