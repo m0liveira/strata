@@ -64,3 +64,12 @@ export const searchInputProperties = {
     placeholder: 'Search',
     secureTextEntry: false
 } as const;
+
+export const floatInputProperties = {
+    autoCapitalize: "none",
+    autoCorrect: false,
+    inputMode: "decimal",
+    keyboardType: "decimal-pad",
+    placeholder: "0.00€",
+    secureTextEntry: false,
+} as const;
