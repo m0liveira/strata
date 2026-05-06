@@ -362,7 +362,7 @@ export default function MyTrips() {
     }
 
     if (currentTab === "Budget") {
-      return <BudgetScreen trip={trip} />;
+      return <BudgetScreen trip={trip} setTrip={setTrip} />;
     }
 
     return null;

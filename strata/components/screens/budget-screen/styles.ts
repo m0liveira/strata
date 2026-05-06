@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
-        borderBottomColor: Colors.grey400,
+        borderBottomColor: Colors.grey300,
         borderBottomWidth: 1,
         paddingBottom: 12,
     },
@@ -95,5 +95,13 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
+    },
+    fieldContainer: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'flex-start',
+        gap: 8,
+        width: '100%',
+        marginBottom: 24,
     },
 });

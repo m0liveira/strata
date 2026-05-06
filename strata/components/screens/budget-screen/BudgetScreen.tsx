@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, Pressable } from "react-native";
+import * as Crypto from "expo-crypto";
 import { styles } from "./styles";
-import { Colors } from "@/constants/global-styles";
+import { Colors, Typography } from "@/constants/global-styles";
 import {
   ArrowIcon,
   CameraIcon,
@@ -10,9 +11,17 @@ import {
 } from "@/components/icons";
 import { user } from "@/utils/userService";
 import { StrataButton } from "@/components/strata-button/StrataButton";
+import { StrataModal } from "@/components/strata-modal/StrataModal";
+import { StrataCTA } from "@/components/strata-cta/StrataCTA";
+import { floatInputProperties } from "@/utils/input-properties";
+import { StrataInput } from "@/components/strata-input/StrataInput";
+import { StrataRadioButtonGroup } from "@/components/strata-radio-button-group/StrataRadioButtonGroup";
+import { pushChanges } from "@/utils/StrataApiService";
+import { useFocusEffect } from "expo-router";
 
 type BudgetProps = {
   trip: any;
+  setTrip: any;
 };
 
 const budgetTypes: any = [
@@ -36,7 +45,45 @@ const budgetTypes: any = [
   },
 ];
 
+const radioButtons = [
+  {
+    id: "Transports",
+    label: "Transports",
+    icon: (
+      <PlaneIcon
+        color={Colors.grey400}
+        classname={[styles.iconSm, { width: 22 }]}
+      />
+    ),
+  },
+  {
+    id: "Food",
+    label: "Food",
+    icon: <ForkKnifeIcon color={Colors.grey400} classname={styles.iconSm} />,
+  },
+  {
+    id: "Activities",
+    label: "Activities",
+    icon: <CameraIcon color={Colors.grey400} classname={styles.iconSm} />,
+  },
+];
+
 export function BudgetScreen(props: BudgetProps) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [isPending, setisPending] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [type, setType] = useState<string | number>("Transports");
+
+  useFocusEffect(
+    useCallback(() => {
+      return async () => {
+        setisPending(false);
+        setAmount("");
+        setType("Transports");
+      };
+    }, []),
+  );
+
   const getPersonalBudget = () => {
     if (!props.trip?.members || props.trip.members.length === 0) {
       return "TBD";
@@ -59,7 +106,7 @@ export function BudgetScreen(props: BudgetProps) {
         return total + Number(expense.amount);
       }
 
-      return total;
+      return Number(total).toFixed(2);
     }, 0);
   };
 
@@ -102,6 +149,40 @@ export function BudgetScreen(props: BudgetProps) {
     );
   };
 
+  const AddExpense = async () => {
+    const expense = {
+      expense_id: Crypto.randomUUID(),
+      trip_id: props.trip.trip_id,
+      user_id: user.user_id,
+      type: type.toString(),
+      amount: Math.trunc(Number(amount) * 100) / 100,
+    };
+
+    try {
+      setisPending(true);
+
+      await pushChanges({
+        expenses: {
+          created: [expense],
+          updated: [],
+          deleted: [],
+        },
+      });
+    } catch (error) {
+      console.error("Error while Adding expense:", error);
+    } finally {
+      props.setTrip({
+        ...props.trip,
+        expenses: [...props.trip.expenses, expense],
+      });
+
+      setisPending(false);
+      setAmount("");
+      setType("Transports");
+      setModalVisible(false);
+    }
+  };
+
   return (
     <>
       <View style={styles.card}>
@@ -109,7 +190,9 @@ export function BudgetScreen(props: BudgetProps) {
           <View style={{ flexDirection: "column" }}>
             <Text style={styles.label}>SPENT</Text>
 
-            <Text style={styles.title}>{getTotalSpent()}€</Text>
+            <Text style={styles.title}>
+              {Number(getTotalSpent()).toFixed(2)}€
+            </Text>
           </View>
 
           <Pressable style={styles.bgIcon} onPress={() => {}}>
@@ -155,11 +238,16 @@ export function BudgetScreen(props: BudgetProps) {
                 ]}
               >
                 <Text style={styles.text}>
-                  {getExpenseTypeTotal(budgetType.title)}€
+                  {Number(getExpenseTypeTotal(budgetType.title).toFixed(2))}€
                 </Text>
 
                 <Text style={[styles.label, { color: Colors.grey400 }]}>
-                  {getExpenseTypePercentageFromTotalSpent(budgetType.title)}%
+                  {Number(
+                    getExpenseTypePercentageFromTotalSpent(
+                      budgetType.title,
+                    ).toFixed(0),
+                  )}
+                  %
                 </Text>
               </View>
             </View>
@@ -184,16 +272,18 @@ export function BudgetScreen(props: BudgetProps) {
           </View>
 
           <View style={styles.textContainer}>
-            <Text style={styles.text}>{getTotalSpent()}€</Text>
+            <Text style={styles.text}>
+              {Number(getTotalSpent().toFixed(2))}€
+            </Text>
 
             <Text style={[styles.label, { color: Colors.grey400 }]}>
-              {getTotalPercentageFromLimit()}%
+              {Number(getTotalPercentageFromLimit().toFixed(0))}%
             </Text>
 
             <Text style={styles.text}>
               {getPersonalBudget() === "TBD"
                 ? getPersonalBudget()
-                : `${getPersonalBudget()}€`}
+                : `${Number(getPersonalBudget()).toFixed(2)}€`}
             </Text>
           </View>
         </View>
@@ -202,9 +292,58 @@ export function BudgetScreen(props: BudgetProps) {
         title="Add expense"
         text="Track your spending!"
         imageSource={require("@/assets/images/bill.png")}
-        onPress={() => { }}
+        onPress={() => setModalVisible(true)}
       />
-      ,
+
+      <StrataModal
+        isVisible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      >
+        <>
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, { color: Colors.grey400 }]}>
+              Amount spent
+            </Text>
+
+            <StrataInput
+              properties={{
+                ...floatInputProperties,
+                value: amount,
+                onChangeText: setAmount,
+              }}
+            />
+          </View>
+
+          <View style={styles.fieldContainer}>
+            <Text style={[styles.label, { color: Colors.grey400 }]}>
+              Expense type
+            </Text>
+
+            <StrataRadioButtonGroup
+              options={radioButtons}
+              selectedValue={type}
+              onValueChange={setType}
+            />
+          </View>
+
+          <StrataCTA
+            text="Add Expense"
+            isDisabled={amount.length <= 0 || isPending}
+            classname={[
+              { marginTop: 24 },
+              (amount.length <= 0 || isPending) && {
+                backgroundColor: Colors.grey100,
+                borderColor: Colors.grey200,
+              },
+            ]}
+            textclassname={[
+              { ...Typography.cta },
+              (amount.length <= 0 || isPending) && { color: Colors.grey400 },
+            ]}
+            onPress={() => AddExpense()}
+          />
+        </>
+      </StrataModal>
     </>
   );
 }

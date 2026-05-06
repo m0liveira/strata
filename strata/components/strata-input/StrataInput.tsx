@@ -21,6 +21,7 @@ type InputProps = {
   };
   properties: {
     autoCapitalize?: "none" | "sentences" | "words" | "characters";
+    autoCorrect?: boolean;
     inputMode?:
       | "decimal"
       | "email"
