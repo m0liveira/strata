@@ -133,6 +133,48 @@ export const getTripByID = async (tripId: string) => {
     }
 };
 
+export const getPublicTrips = async () => {
+    try {
+        const response = await fetch(`${API_URL}/trips/discover/public`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get trips");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getSocialTrips = async () => {
+    try {
+        const response = await fetch(`${API_URL}/trips/discover/friends`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get trip");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
 type TicketData = {
     uri: string;
     fileName: string;

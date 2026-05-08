@@ -11,11 +11,18 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
-import { ArrowIcon, BarbellIcon, CoinIcon, WalkIcon } from "@/components/icons";
+import {
+  ArrowIcon,
+  BarbellIcon,
+  CoinIcon,
+  StarIcon,
+  WalkIcon,
+} from "@/components/icons";
 import { Trip } from "@/types/models/trip-model";
 
 type TripCardProps = {
   classname?: StyleProp<ViewStyle>;
+  isPublic?: boolean;
   trip: Trip;
   onPress: () => void;
 };
@@ -73,11 +80,7 @@ export function TripCard(props: TripCardProps) {
       onPress={props.onPress}
     >
       <View style={styles.imageContainer}>
-        <Image
-          source={imageSource}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        <Image source={imageSource} style={styles.image} resizeMode="cover" />
 
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.85)"]}
@@ -86,11 +89,22 @@ export function TripCard(props: TripCardProps) {
 
         <View style={styles.tripContainer}>
           <View style={styles.textContainer}>
-            <Text style={[styles.date, isCurrent && styles.current]}>
-              {props.trip.start_date
-                ? new Date(props.trip.start_date).toLocaleDateString("pt-PT")
-                : "TBD"}
-            </Text>
+            {props.isPublic ? (
+              <View style={styles.rating}>
+                <StarIcon
+                  color={Colors.gold}
+                  classname={{ aspectRatio: 1, width: 10 }}
+                />
+
+                <Text style={styles.ratingText}>{Number(props.trip.rating).toFixed(1)}</Text>
+              </View>
+            ) : (
+              <Text style={[styles.date, isCurrent && styles.current]}>
+                {props.trip.start_date
+                  ? new Date(props.trip.start_date).toLocaleDateString("pt-PT")
+                  : "TBD"}
+              </Text>
+            )}
 
             <Text style={[styles.title]}>{props.trip.name}</Text>
           </View>

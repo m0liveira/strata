@@ -141,9 +141,6 @@ export function BudgetScreen(props: BudgetProps) {
       return 0;
     }
 
-    // const totalSpent = getTotalSpent();
-    // const expenseTypeTotal = getExpenseTypeTotal(expenseType);
-
     return Math.round(
       (getExpenseTypeTotal(expenseType) * 100) / getTotalSpent(),
     );
