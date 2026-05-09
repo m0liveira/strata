@@ -1,6 +1,12 @@
 import { styles } from "./styles";
 import { Calendar } from "react-native-calendars";
-import { eachDayOfInterval, format, isBefore, parseISO } from "date-fns";
+import {
+  eachDayOfInterval,
+  format,
+  isBefore,
+  parseISO,
+  addDays,
+} from "date-fns";
 import { BorderRadius, Colors } from "@/constants/global-styles";
 import { StyleProp, ViewStyle } from "react-native";
 
@@ -9,6 +15,7 @@ type StrataCalendarProps = {
   startDate: string | null;
   endDate: string | null;
   onRangeChange: (range: { start: string | null; end: string | null }) => void;
+  fixedRangeLength?: number;
 };
 
 export function StrataCalendar(props: StrataCalendarProps) {
@@ -16,6 +23,14 @@ export function StrataCalendar(props: StrataCalendarProps) {
 
   const onDayPress = (day: any) => {
     const dateString = day.dateString;
+
+    if (props.fixedRangeLength && props.fixedRangeLength > 0) {
+      const endObj = addDays(parseISO(dateString), props.fixedRangeLength - 1);
+      const endString = format(endObj, "yyyy-MM-dd");
+
+      props.onRangeChange({ start: dateString, end: endString });
+      return;
+    }
 
     if (!props.startDate) {
       props.onRangeChange({ start: dateString, end: dateString });

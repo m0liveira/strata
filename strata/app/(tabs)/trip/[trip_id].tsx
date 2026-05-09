@@ -1,10 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Tabs, useFocusEffect, useLocalSearchParams } from "expo-router";
+import {
+  router,
+  Tabs,
+  useFocusEffect,
+  useLocalSearchParams,
+} from "expo-router";
 import { Text, View } from "react-native";
 import { styles } from "@/styles/trip/styles";
 import { TripHeader } from "@/components/strata-trip-header/StrataTripHeader";
 import {
   deleteImageFromSupabase,
+  getSharedTripByID,
   getTripByID,
   pushChanges,
   uploadTicketToSupabase,
@@ -16,11 +22,15 @@ import { SpotCreationForm } from "@/components/features/spot-creation-form/SpotC
 import { screenOptions } from "../_layout";
 import { StrataHeader } from "@/components/strata-header/StrataHeader";
 import { ArrowIcon } from "@/components/icons/ui-core/ArrowIcon";
-import { Colors } from "@/constants/global-styles";
+import { Colors, Typography } from "@/constants/global-styles";
 import * as Crypto from "expo-crypto";
-import { StrataLocationGroup } from "@/components/strata-location-group/StrataRadioButtonGroup";
+import { StrataLocationGroup } from "@/components/strata-location-group/StrataLocationGroup";
 import { StrataSmallButton } from "@/components/strata-small-button/StrataButton";
-import { TreePalmIcon } from "@/components/icons";
+import { BookmarkIcon, TreePalmIcon } from "@/components/icons";
+import { StrataModal } from "@/components/strata-modal/StrataModal";
+import { StrataCalendar } from "@/components/strata-calendar/StrataCalendar";
+import { StrataCTA } from "@/components";
+import { user } from "@/utils/userService";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -28,33 +38,48 @@ export default function Trip() {
   const [tabs, setTabs] = useState<string[]>([]);
   const [isCreating, setisCreating] = useState(false);
   const [days, setDays] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
+  const [disabled, setDisabled] = useState(false);
 
-  const { trip_id, origin } = useLocalSearchParams() as {
+  const { trip_id, origin, creator } = useLocalSearchParams() as {
     trip_id: string;
     origin?: string;
+    creator?: string;
+  };
+
+  const getDiffInDays = (
+    startDate: string | Date,
+    endDate: string | Date,
+  ): number => {
+    if (!startDate || !endDate) return 0;
+
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+
+    const diffInMilliseconds = end - start;
+    return Math.round(diffInMilliseconds / (1000 * 60 * 60 * 24)) + 1;
   };
 
   useEffect(() => {
     const fetchTrip = async () => {
-      const tripData = await getTripByID(trip_id);
+      const tripData =
+        origin === "discover"
+          ? await getSharedTripByID(trip_id)
+          : await getTripByID(trip_id);
+
       setTrip(tripData);
 
       if (tripData?.start_date && tripData?.end_date) {
-        const start = new Date(tripData.start_date).getTime();
-        const end = new Date(tripData.end_date).getTime();
-
-        const diffInMilliseconds = end - start;
-        const diffInDays =
-          Math.round(diffInMilliseconds / (1000 * 60 * 60 * 24)) + 1;
-
         const generatedTabs = Array.from(
-          { length: diffInDays },
+          { length: getDiffInDays(tripData.start_date, tripData.end_date) },
           (_, i) => `Day ${i + 1}`,
         );
 
         setTabs(["Map", ...generatedTabs]);
         setCurrentTab(generatedTabs[0]);
-        setDays(diffInDays);
+        setDays(getDiffInDays(tripData.start_date, tripData.end_date));
       } else {
         setTabs(["Map", "Itinerary"]);
         setCurrentTab("Itinerary");
@@ -62,12 +87,16 @@ export default function Trip() {
     };
 
     fetchTrip();
-  }, [trip_id]);
+  }, [origin, trip_id]);
 
   useFocusEffect(
     useCallback(() => {
       return async () => {
         setisCreating(false);
+        setModalVisible(false);
+        setDisabled(false);
+        setStartDate(null);
+        setEndDate(null);
         renderTabContent();
       };
     }, []),
@@ -87,21 +116,25 @@ export default function Trip() {
           <View style={styles.emptyStateContainer}>
             <EmptyState
               globeClassName={styles.globe}
-              buttons={[
-                <StrataButton
-                  key="add-spot"
-                  title="Add a Spot"
-                  text="What do you wish to see?"
-                  imageSource={require("@/assets/images/pin.png")}
-                  onPress={() => setisCreating(true)}
-                />,
-              ]}
+              buttons={
+                origin === "discover"
+                  ? []
+                  : [
+                      <StrataButton
+                        key="add-spot"
+                        title="Add a Spot"
+                        text="What do you wish to see?"
+                        imageSource={require("@/assets/images/pin.png")}
+                        onPress={() => setisCreating(true)}
+                      />,
+                    ]
+              }
             />
           </View>
         );
       }
 
-      return <StrataLocationGroup locations={locations} />;
+      return <StrataLocationGroup locations={locations} origin={origin} />;
     }
 
     if (currentTab.startsWith("Day")) {
@@ -127,21 +160,25 @@ export default function Trip() {
           <View style={styles.emptyStateContainer}>
             <EmptyState
               globeClassName={styles.globe}
-              buttons={[
-                <StrataButton
-                  key="add-spot"
-                  title="Add a Spot"
-                  text="What do you wish to see?"
-                  imageSource={require("@/assets/images/pin.png")}
-                  onPress={() => setisCreating(true)}
-                />,
-              ]}
+              buttons={
+                origin === "discover"
+                  ? []
+                  : [
+                      <StrataButton
+                        key="add-spot"
+                        title="Add a Spot"
+                        text="What do you wish to see?"
+                        imageSource={require("@/assets/images/pin.png")}
+                        onPress={() => setisCreating(true)}
+                      />,
+                    ]
+              }
             />
           </View>
         );
       }
 
-      return <StrataLocationGroup locations={dayLocations} />;
+      return <StrataLocationGroup locations={dayLocations} origin={origin} />;
     }
 
     return null;
@@ -218,6 +255,8 @@ export default function Trip() {
   }
 
   const shouldShowAddSpotButton = (currentTab: string, locations: any[]) => {
+    if (origin === "discover") return false;
+
     if (!locations || locations.length === 0) return false;
 
     if (currentTab === "Itinerary") return true;
@@ -228,6 +267,95 @@ export default function Trip() {
     }
 
     return false;
+  };
+
+  const disableButton = () => {
+    if ((startDate === null && endDate === null) || disabled) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const handleSaveTrip = async () => {
+    setDisabled(true);
+
+    const newTripId = Crypto.randomUUID();
+
+    try {
+      const { destinations, locations, deleted_at, ...tripData } = trip;
+
+      const updatedTripData = {
+        ...tripData,
+        trip_id: newTripId,
+        banner: "/assets/images/default-trip-banner.png",
+        start_date: startDate ? new Date(startDate).toISOString() : null,
+        end_date: endDate ? new Date(endDate).toISOString() : null,
+        rating: 0,
+        visibility: "private",
+      };
+
+      const updatedDestinations = destinations.map((d: any) => {
+        const { deleted_at: dest_deleted_at, ...restD } = d;
+        return {
+          ...restD,
+          destination_id: Crypto.randomUUID(),
+          trip_id: updatedTripData.trip_id,
+        };
+      });
+
+      const updatedLocations = locations.map((loc: any) => {
+        const { deleted_at: loc_deleted_at, ...restLoc } = loc;
+        return {
+          ...restLoc,
+          location_id: Crypto.randomUUID(),
+          trip_id: updatedTripData.trip_id,
+          ticket_url: null,
+        };
+      });
+
+      const myChanges = {
+        trips: {
+          created: [
+            {
+              ...updatedTripData,
+            },
+          ],
+          updated: [],
+          deleted: [],
+        },
+        destinations: {
+          created: updatedDestinations,
+          updated: [],
+          deleted: [],
+        },
+        locations: {
+          created: updatedLocations,
+          updated: [],
+          deleted: [],
+        },
+      };
+
+      await pushChanges(myChanges);
+
+      user.trips.push(myChanges.trips.created[0]);
+    } catch (error) {
+      console.error(error);
+      alert("Error saving trip. Please try again.");
+    } finally {
+      setModalVisible(false);
+      setDisabled(false);
+      setStartDate(null);
+      setEndDate(null);
+
+      router.push({
+        pathname: "/trip/[trip_id]",
+        params: {
+          trip_id: newTripId,
+          origin: "my-trips",
+        },
+      });
+    }
   };
 
   return !isCreating ? (
@@ -241,7 +369,12 @@ export default function Trip() {
       />
 
       {trip && (
-        <TripHeader trip={trip} origin={origin} members={trip.members} />
+        <TripHeader
+          trip={trip}
+          origin={origin}
+          creator={creator}
+          members={trip.members}
+        />
       )}
 
       <StrataTab
@@ -264,6 +397,54 @@ export default function Trip() {
           }
           onPress={() => setisCreating(!isCreating)}
         />
+      )}
+
+      {origin === "discover" && (
+        <>
+          <StrataSmallButton
+            text="Save Trip"
+            icon={
+              <BookmarkIcon
+                color={Colors.white}
+                classname={{ aspectRatio: 1, width: 18 }}
+              />
+            }
+            onPress={() => setModalVisible(true)}
+          />
+
+          <StrataModal
+            isVisible={modalVisible}
+            onClose={() => setModalVisible(false)}
+          >
+            <StrataCalendar
+              startDate={startDate}
+              endDate={endDate}
+              onRangeChange={({ start, end }) => {
+                setStartDate(start);
+                setEndDate(end);
+              }}
+              fixedRangeLength={
+                getDiffInDays(trip?.start_date, trip?.end_date) === 0
+                  ? 1
+                  : getDiffInDays(trip?.start_date, trip?.end_date)
+              }
+            />
+
+            <StrataCTA
+              text="Save Trip"
+              classname={[
+                disableButton() && styles.disabled,
+                { marginTop: 60 },
+              ]}
+              textclassname={[
+                disableButton() && styles.disabledText,
+                { ...Typography.cta },
+              ]}
+              isDisabled={disableButton()}
+              onPress={handleSaveTrip}
+            />
+          </StrataModal>
+        </>
       )}
     </View>
   ) : (

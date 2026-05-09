@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Pressable,
-  Text,
-  View,
-  StyleProp,
-  ViewStyle,
-} from "react-native";
+import { Pressable, Text, View, StyleProp, ViewStyle } from "react-native";
 import { Colors } from "@/constants/global-styles";
 import { styles } from "./styles";
 import { Location } from "@/types/models/location-model";
@@ -15,6 +9,7 @@ type LocationCardProps = {
   classname?: StyleProp<ViewStyle>;
   location: Location;
   onPress?: (id: string | number) => void;
+  origin?: string;
 };
 
 export function StrataLocationCard(props: LocationCardProps) {
@@ -43,7 +38,7 @@ export function StrataLocationCard(props: LocationCardProps) {
         <Text style={styles.text}>{props.location.name}</Text>
       </View>
 
-      {props.location.ticket_url && (
+      {props.location.ticket_url && props.origin !== "discover" && (
         <Pressable
           onPress={() => {
             console.log("show ticket here");

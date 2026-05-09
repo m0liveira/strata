@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleProp,
   ViewStyle,
-  TextStyle,
 } from "react-native";
 import { styles } from "./styles";
 import { Location } from "@/types/models/location-model";
@@ -15,12 +14,17 @@ import { Colors } from "@/constants/global-styles";
 type LocationGroupProps = {
   classname?: StyleProp<ViewStyle>;
   locations: Location[];
+  origin?: string;
 };
 
 export function StrataLocationGroup(props: LocationGroupProps) {
   const renderLocations = () =>
     props.locations.map((location) => (
-      <StrataLocationCard key={location.location_id} location={location} />
+      <StrataLocationCard
+        key={location.location_id}
+        location={location}
+        origin={props.origin}
+      />
     ));
 
   return (

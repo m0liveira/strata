@@ -102,34 +102,48 @@ export default function Discover() {
             </Pressable>
           </View>
 
-          {displayTrips.map((trip: any) => (
-            <View key={trip.trip_id} style={styles.cardContainer}>
-              <View style={{ width: "100%", justifyContent: "flex-start" }}>
-                <Pressable style={[styles.creator]} onPress={() => {}}>
-                  <Image
-                    source={
-                      trip.creator.photo.includes("/assets/")
-                        ? require("@/assets/images/default-avatar.png")
-                        : { uri: trip.creator.photo }
-                    }
-                    style={styles.avatar}
-                    contentFit="cover"
-                  />
+          {displayTrips.map((trip: any, index: number) => {
+            const isLast = index === displayTrips.length - 1;
 
-                  <Text style={[styles.name]}>{trip.creator.username}</Text>
-                </Pressable>
-              </View>
-
-              <TripCard
+            return (
+              <View
                 key={trip.trip_id}
-                trip={trip}
-                isPublic={true}
-                onPress={() => {
-                  console.log(1);
-                }}
-              />
-            </View>
-          ))}
+                style={[styles.cardContainer, isLast && { marginBottom: 40 }]}
+              >
+                <View style={{ width: "100%", justifyContent: "flex-start" }}>
+                  <Pressable style={[styles.creator]} onPress={() => {}}>
+                    <Image
+                      source={
+                        trip.creator.photo.includes("/assets/")
+                          ? require("@/assets/images/default-avatar.png")
+                          : { uri: trip.creator.photo }
+                      }
+                      style={styles.avatar}
+                      contentFit="cover"
+                    />
+
+                    <Text style={[styles.name]}>{trip.creator.username}</Text>
+                  </Pressable>
+                </View>
+
+                <TripCard
+                  key={trip.trip_id}
+                  trip={trip}
+                  isPublic={true}
+                  onPress={() => {
+                    router.push({
+                      pathname: "/trip/[trip_id]",
+                      params: {
+                        trip_id: trip.trip_id,
+                        origin: "discover",
+                        creator: trip.creator.photo,
+                      },
+                    });
+                  }}
+                />
+              </View>
+            );
+          })}
         </ScrollView>
       );
     }
