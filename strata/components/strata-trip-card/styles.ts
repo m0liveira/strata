@@ -106,5 +106,21 @@ export const styles = StyleSheet.create({
     current: {
         color: Colors.coral300,
         borderColor: Colors.coral300,
+    },
+    rating: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        backgroundColor: Colors.white40,
+        borderRadius: BorderRadius.full,
+        minWidth: 38,
+        minHeight: 14,
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+    },
+    ratingText: {
+        ...Typography.labelS,
+        color: Colors.white
     }
 });

@@ -1,23 +1,23 @@
 import React from "react";
-import {
-  Pressable,
-  StyleProp,
-  Text,
-  ViewStyle,
-  View,
-  Image,
-} from "react-native";
+import { Pressable, StyleProp, Text, ViewStyle, View } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./styles";
 import { Trip } from "@/types/models/trip-model";
 import { Colors } from "@/constants/global-styles";
-import { ArrowIcon, ChatBubbleIcon, MoreIcon } from "@/components/icons";
+import {
+  ArrowIcon,
+  ChatBubbleIcon,
+  MoreIcon,
+  StarIcon,
+} from "@/components/icons";
 import { router } from "expo-router";
 
 type TripHeaderProps = {
   classname?: StyleProp<ViewStyle>;
   trip: Trip;
   origin?: string;
+  creator?: string;
   members: any[];
   onPress?: () => void;
 };
@@ -79,17 +79,42 @@ export function TripHeader(props: TripHeaderProps) {
 
         <View style={styles.container}>
           <View style={styles.textContainer}>
-            <Text style={[styles.date, isCurrent && styles.current]}>
-              {new Date(props.trip.start_date).toLocaleDateString("pt-PT")}
-            </Text>
+            {props.origin === "discover" ? (
+              <View style={styles.rating}>
+                <StarIcon
+                  color={Colors.gold}
+                  classname={{ aspectRatio: 1, width: 10 }}
+                />
+
+                <Text style={styles.ratingText}>
+                  {Number(props.trip.rating).toFixed(1)}
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.date, isCurrent && styles.current]}>
+                {new Date(props.trip.start_date).toLocaleDateString("pt-PT")}
+              </Text>
+            )}
 
             <Text style={[styles.title]}>{props.trip.name}</Text>
           </View>
 
-          {props.members.length > 1 && (
+          {props.members?.length > 1 && (
             <Pressable style={styles.icon} onPress={() => {}}>
               <ChatBubbleIcon color={Colors.white} classname={styles.icon} />
             </Pressable>
+          )}
+
+          {props.origin === "discover" && (
+            <Image
+              source={
+                props.creator?.includes("/assets/")
+                  ? require("@/assets/images/default-avatar.png")
+                  : { uri: props.creator }
+              }
+              style={styles.avatar}
+              contentFit="cover"
+            />
           )}
         </View>
       </View>

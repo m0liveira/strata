@@ -59,5 +59,12 @@ export const styles = StyleSheet.create({
     },
     createTripButton: {
         marginBottom: 75,
+    },
+    disabled: {
+        backgroundColor: Colors.grey100,
+        borderColor: Colors.grey200
+    },
+    disabledText: {
+        color: Colors.grey400
     }
 });

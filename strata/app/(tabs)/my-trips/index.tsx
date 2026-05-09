@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useState, useCallback, useEffect } from "react";
 import { router, useFocusEffect, Tabs } from "expo-router";
 import * as Crypto from "expo-crypto";
