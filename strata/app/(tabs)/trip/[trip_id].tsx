@@ -306,11 +306,30 @@ export default function Trip() {
 
       const updatedLocations = locations.map((loc: any) => {
         const { deleted_at: loc_deleted_at, ...restLoc } = loc;
+
+        let newScheduledTime = null;
+
+        if (loc.scheduled_time && startDate) {
+          const originalDate = new Date(loc.scheduled_time);
+          const targetDate = new Date(startDate);
+
+          targetDate.setUTCDate(targetDate.getUTCDate() + (loc.day - 1));
+
+          targetDate.setUTCHours(
+            originalDate.getUTCHours(),
+            originalDate.getUTCMinutes(),
+            originalDate.getUTCSeconds(),
+          );
+
+          newScheduledTime = targetDate.toISOString();
+        }
+
         return {
           ...restLoc,
           location_id: Crypto.randomUUID(),
           trip_id: updatedTripData.trip_id,
           ticket_url: null,
+          scheduled_time: newScheduledTime,
         };
       });
 
