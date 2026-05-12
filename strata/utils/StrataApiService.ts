@@ -91,6 +91,97 @@ export const getUsersData = async (ids: number[] | number) => {
     }
 };
 
+export const searchUser = async (username: string) => {
+    if (!username || username === user.username) {
+        return null;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/user/username/${encodeURIComponent(username)}`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to search users");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const sendFriendRequest = async (userId: number) => {
+    try {
+        const response = await fetch(`${API_URL}/friendships/request/${userId}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to send friend request");
+        }
+
+        return await response.json();
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
+export const declineFriendRequest = async (userId: number) => {
+    try {
+        const response = await fetch(`${API_URL}/friendships/remove/${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to send friend request");
+        }
+
+        return await response.json();
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
+export const stopFollowingUser = async (userId: number) => {
+    try {
+        const response = await fetch(`${API_URL}/follows/${userId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to send friend request");
+        }
+
+        return await response.json();
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
 export const inviteToTrip = async (tripId: string, userId: number) => {
     try {
         const response = await fetch(`${API_URL}/trip-members/${tripId}/invite/${userId}`, {

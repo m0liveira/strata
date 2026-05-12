@@ -8,6 +8,7 @@ export type SocialUserProps = {
   user: PublicUser;
   isSelected?: boolean;
   onPress?: () => void;
+  onIconPress?: () => void;
   rightIcon?: React.ReactNode;
   classname?: StyleProp<ViewStyle>;
 };
@@ -44,7 +45,9 @@ export function StrataSocialUser(props: SocialUserProps) {
       </View>
 
       {props.rightIcon && (
-        <View style={styles.actionContainer}>{props.rightIcon}</View>
+        <Pressable style={styles.actionContainer} onPress={props.onIconPress}>
+          {props.rightIcon}
+        </Pressable>
       )}
     </Pressable>
   );
