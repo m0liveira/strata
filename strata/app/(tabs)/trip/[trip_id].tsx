@@ -5,13 +5,14 @@ import {
   useFocusEffect,
   useLocalSearchParams,
 } from "expo-router";
-import { Text, View } from "react-native";
+import { Pressable, Text, View, Alert } from "react-native";
 import { styles } from "@/styles/trip/styles";
 import { TripHeader } from "@/components/strata-trip-header/StrataTripHeader";
 import {
   deleteImageFromSupabase,
   getSharedTripByID,
   getTripByID,
+  LeaveTrip,
   pushChanges,
   uploadTicketToSupabase,
 } from "@/utils/StrataApiService";
@@ -39,6 +40,7 @@ export default function Trip() {
   const [isCreating, setisCreating] = useState(false);
   const [days, setDays] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalSettingsVisible, setModalSettingsVisible] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [disabled, setDisabled] = useState(false);
@@ -48,6 +50,10 @@ export default function Trip() {
     origin?: string;
     creator?: string;
   };
+
+  const isOneMemberOnly = trip?.members?.length === 1;
+
+  let isActionOnGoing = false;
 
   const getDiffInDays = (
     startDate: string | Date,
@@ -377,6 +383,91 @@ export default function Trip() {
     }
   };
 
+  const confirmDangerAction = () => {
+    const actionText = isOneMemberOnly ? "Delete" : "Leave";
+    const tripName = trip?.name || "Trip";
+
+    Alert.alert(
+      `${actionText} "${tripName}" `,
+      `Are you sure you want to ${actionText.toLowerCase()} "${tripName}"? This action cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: actionText,
+          style: "destructive",
+          onPress: () => handleTripDangerAction(),
+        },
+      ],
+    );
+  };
+
+  const handleTripDangerAction = async () => {
+    if (isActionOnGoing) return;
+
+    isActionOnGoing = true;
+
+    try {
+      if (!isOneMemberOnly) {
+        const userExpenses = trip.expenses.filter(
+          (expense: any) => expense.user_id === user.user_id,
+        );
+
+        const data = {
+          expenses: {
+            created: [],
+            updated: [],
+            deleted: userExpenses,
+          },
+        };
+
+        await Promise.all([pushChanges(data), LeaveTrip(trip_id)]);
+
+        user.trips = user.trips.filter((t: any) => t.trip_id !== trip_id);
+      }
+
+      const data = {
+        trips: {
+          created: [],
+          updated: [],
+          deleted: [trip_id],
+        },
+        locations: {
+          created: [],
+          updated: [],
+          deleted: trip.locations
+            ? trip.locations.map((l: any) => l.location_id)
+            : [],
+        },
+        destinations: {
+          created: [],
+          updated: [],
+          deleted: trip.destinations
+            ? trip.destinations.map((d: any) => d.destination_id)
+            : [],
+        },
+        expenses: {
+          created: [],
+          updated: [],
+          deleted: trip.expenses
+            ? trip.expenses.map((e: any) => e.expense_id)
+            : [],
+        },
+      };
+
+      await Promise.all([pushChanges(data), LeaveTrip(trip_id)]);
+
+      user.trips = user.trips.filter((t: any) => t.trip_id !== trip_id);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      isActionOnGoing = false;
+      router.replace("/my-trips");
+    }
+  };
+
   return !isCreating ? (
     <View style={styles.page}>
       <Tabs.Screen
@@ -393,6 +484,7 @@ export default function Trip() {
           origin={origin}
           creator={creator}
           members={trip.members}
+          onPress={() => setModalSettingsVisible(true)}
         />
       )}
 
@@ -465,6 +557,26 @@ export default function Trip() {
           </StrataModal>
         </>
       )}
+
+      <StrataModal
+        isVisible={modalSettingsVisible}
+        onClose={() => setModalSettingsVisible(false)}
+      >
+        <View style={styles.options}>
+          {origin !== "discover" ? (
+            <Pressable
+              style={styles.dangerAction}
+              onPress={confirmDangerAction}
+            >
+              <Text style={styles.dangerText}>
+                {isOneMemberOnly
+                  ? `Delete "${trip?.name || "Trip"}"`
+                  : `Leave "${trip?.name || "Trip"}"`}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </StrataModal>
     </View>
   ) : (
     <View style={[styles.page, { paddingHorizontal: 40 }]}>

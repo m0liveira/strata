@@ -519,7 +519,8 @@ export default function Profile() {
   };
 
   // #TODO: Go to users profiles
-
+  // #TODO: Add confirmation alert for unfriending and unfollowing
+  
   return (
     <View style={styles.page}>
       <StrataHeader

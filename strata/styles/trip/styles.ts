@@ -66,5 +66,23 @@ export const styles = StyleSheet.create({
     },
     disabledText: {
         color: Colors.grey400
-    }
+    },
+    options: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 24,
+        flex: 1,
+        width: '100%',
+    },
+    dangerAction: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    },
+    dangerText: {
+        ...Typography.cta,
+        color: '#f96666',
+    },
 });
