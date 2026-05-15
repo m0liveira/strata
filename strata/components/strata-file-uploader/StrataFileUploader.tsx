@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Pressable,
@@ -12,6 +12,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { UploadIcon, XCircleIcon } from "../icons";
+import { useFocusEffect } from "expo-router";
 
 export type PreparedFile = {
   uri: string;
@@ -20,6 +21,7 @@ export type PreparedFile = {
 };
 
 type FileUploaderProps = {
+  file?: string | null;
   onFilePrepared: (file: PreparedFile | null) => void;
   classname?: {
     container?: StyleProp<ViewStyle>;
@@ -29,6 +31,21 @@ type FileUploaderProps = {
 export function StrataFileUploader(props: FileUploaderProps) {
   const [fileName, setFileName] = useState<string | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
+
+  const renderFile = () => {
+    if (props.file) {
+      const rawFileName = props.file.split("/").pop() || "file";
+      const fileName = decodeURIComponent(rawFileName);
+      setFileName(fileName);
+    } else {
+      setFileName(null);
+      props.onFilePrepared(null);
+    }
+  };
+
+  useEffect(() => {
+    renderFile();
+  }, [props.file]);
 
   const pickAndPrepareFile = async () => {
     try {

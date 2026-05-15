@@ -609,6 +609,10 @@ export default function Trip() {
     isActionOnGoing = true;
 
     try {
+      if (selectedLocation.ticket_url) {
+        await deleteImageFromSupabase(selectedLocation.ticket_url, "tickets");
+      }
+
       const data = {
         locations: {
           created: [],
@@ -636,6 +640,77 @@ export default function Trip() {
       isActionOnGoing = false;
       setModalSettingsVisible(false);
       setSelectedLocation(null);
+    }
+  };
+
+  const handleUpdateLocation = async (data: any) => {
+    if (isActionOnGoing) return;
+
+    isActionOnGoing = true;
+
+    let finalTicketUrl = selectedLocation.ticket_url;
+    let ticketWasUploaded = false;
+    let formattedTimestamp = data.scheduled_time;
+
+    try {
+      if (data.ticket_url !== selectedLocation.ticket_url) {
+        if (selectedLocation.ticket_url) {
+          await deleteImageFromSupabase(selectedLocation.ticket_url, "tickets");
+        }
+
+        if (data.ticket_url) {
+          finalTicketUrl = await uploadTicketToSupabase(
+            data.ticket_url,
+            "tickets",
+          );
+          ticketWasUploaded = true;
+        } else {
+          finalTicketUrl = null;
+        }
+      }
+
+      if (data.scheduled_time) {
+        const spotDate = new Date(trip.start_date);
+        spotDate.setDate(spotDate.getDate() + (data.day - 1));
+        const [hours, minutes] = data.scheduled_time.split(":");
+        spotDate.setHours(Number(hours), Number(minutes), 0, 0);
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        formattedTimestamp = `${spotDate.getFullYear()}-${pad(spotDate.getMonth() + 1)}-${pad(spotDate.getDate())}T${pad(spotDate.getHours())}:${pad(spotDate.getMinutes())}:00.000Z`;
+      }
+
+      const newData = {
+        locations: {
+          created: [],
+          updated: [
+            {
+              location_id: selectedLocation.location_id,
+              trip_id: trip_id,
+              name: data.name,
+              scheduled_time: formattedTimestamp,
+              day: data.day,
+              ticket_url: finalTicketUrl,
+            },
+          ],
+          deleted: [],
+        },
+      };
+
+      await pushChanges(newData);
+    } catch (error) {
+      console.error("Update error:", error);
+      if (ticketWasUploaded && finalTicketUrl) {
+        try {
+          await deleteImageFromSupabase(finalTicketUrl, "tickets");
+        } catch (cleanupError) {
+          console.error("Error deleting file after failure:", cleanupError);
+        }
+      }
+    } finally {
+      setIsUpdated(true);
+      isActionOnGoing = false;
+      setModalSettingsVisible(false);
+      setSelectedLocation(null);
+      setisCreating(false);
     }
   };
 
@@ -902,7 +977,11 @@ export default function Trip() {
 
                 <Pressable
                   style={styles.action}
-                  onPress={() => setIsUpdating(true)}
+                  onPress={() =>
+                    !selectedLocation
+                      ? setIsUpdating(true)
+                      : setisCreating(true)
+                  }
                 >
                   <Text style={styles.optionsText}>
                     {!selectedLocation
@@ -991,10 +1070,13 @@ export default function Trip() {
             ? parseInt(currentTab.split(" ")[1], 10)
             : 1
         }
-        handleSubmit={handleSpotSubmit}
+        spotData={selectedLocation}
+        handleSubmit={
+          !selectedLocation ? handleSpotSubmit : handleUpdateLocation
+        }
       />
     </View>
   );
 }
 
-// #TODO: Clean this page code
+// #TODO: Clean this page code up!!! a lot of messy code...
