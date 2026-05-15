@@ -15,6 +15,7 @@ import { ArrowIcon, MinusIcon, PlusIcon } from "@/components/icons";
 import { StrataSocialList } from "@/components/strata-social-list/StrataSocialList";
 import { user } from "@/utils/userService";
 import { PublicUser } from "@/types/models/user-model";
+import { format, parseISO } from "date-fns";
 import {
   budgetOptions,
   intensityOptions,
@@ -24,6 +25,8 @@ import {
 
 type TripCreationFormProps = {
   stage: number;
+  tripData?: any;
+  hideInvite?: boolean;
   handleSubmit: (data: any) => void;
 };
 
@@ -44,10 +47,6 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
   const [intensity, setIntensity] = useState<string | number>("");
   const [tripStyle, setTripStyle] = useState<string | number>("adventure");
 
-  useEffect(() => {
-    setFriendsProfiles(user.friends_profiles || []);
-  }, []);
-
   const resetForm = () => {
     setBanner("/assets/images/default-banner.png");
     setName("");
@@ -59,7 +58,39 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
     setBudget("");
     setIntensity("");
     setTripStyle("adventure");
+
+    if (props.tripData && Object.keys(props.tripData).length !== 0) {
+      setBanner(props.tripData.banner);
+      setName(props.tripData.name);
+
+      const mappedDestinations = props.tripData.destinations
+        ? props.tripData.destinations.map((d: any) => d.destination)
+        : [];
+
+      setDestinations(mappedDestinations);
+      setVisibility(props.tripData.visibility);
+
+      const startFormatted = props.tripData.start_date
+        ? format(parseISO(props.tripData.start_date), "yyyy-MM-dd")
+        : null;
+
+      const endFormatted = props.tripData.end_date
+        ? format(parseISO(props.tripData.end_date), "yyyy-MM-dd")
+        : null;
+
+      setStartDate(startFormatted);
+      setEndDate(endFormatted);
+      setSelectedUsers([]);
+      setBudget(props.tripData.budget_level);
+      setIntensity(props.tripData.intensity_level);
+      setTripStyle(props.tripData.travel_style);
+    }
   };
+
+  useEffect(() => {
+    setFriendsProfiles(user.friends_profiles || []);
+    resetForm();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -109,6 +140,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
             element: (
               <StrataImagePicker
                 classname={{ container: styles.generalGap }}
+                image={banner.startsWith("/assets") ? null : banner}
                 onImagePicked={(uri) =>
                   setBanner(uri || "/assets/images/default-banner.png")
                 }
@@ -187,7 +219,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
               />
             ),
           },
-          {
+          !props.hideInvite && {
             label: "* Trip party",
             element: (
               <StrataSocialList
@@ -224,7 +256,7 @@ export const TripCreationForm = (props: TripCreationFormProps) => {
               />
             ),
           },
-        ];
+        ].filter(Boolean) as { label?: string; element: React.ReactNode }[];
 
       case 3:
         return [

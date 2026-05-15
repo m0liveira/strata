@@ -14,6 +14,7 @@ import {
   getTripByID,
   LeaveTrip,
   pushChanges,
+  uploadImageToSupabase,
   uploadTicketToSupabase,
 } from "@/utils/StrataApiService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
@@ -30,7 +31,7 @@ import { StrataSmallButton } from "@/components/strata-small-button/StrataButton
 import { BookmarkIcon, TreePalmIcon } from "@/components/icons";
 import { StrataModal } from "@/components/strata-modal/StrataModal";
 import { StrataCalendar } from "@/components/strata-calendar/StrataCalendar";
-import { StrataCTA } from "@/components";
+import { StrataCTA, TripCreationForm } from "@/components";
 import { user } from "@/utils/userService";
 
 export default function Trip() {
@@ -38,12 +39,15 @@ export default function Trip() {
   const [currentTab, setCurrentTab] = useState("");
   const [tabs, setTabs] = useState<string[]>([]);
   const [isCreating, setisCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [creationStage, setCreationStage] = useState(1);
   const [days, setDays] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalSettingsVisible, setModalSettingsVisible] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [disabled, setDisabled] = useState(false);
+  const [isUpdated, setIsUpdated] = useState(false);
 
   const { trip_id, origin, creator } = useLocalSearchParams() as {
     trip_id: string;
@@ -70,6 +74,8 @@ export default function Trip() {
 
   useEffect(() => {
     const fetchTrip = async () => {
+      setIsUpdated(false);
+
       const tripData =
         origin === "discover"
           ? await getSharedTripByID(trip_id)
@@ -93,17 +99,20 @@ export default function Trip() {
     };
 
     fetchTrip();
-  }, [origin, trip_id]);
+  }, [origin, trip_id, isUpdated]);
 
   useFocusEffect(
     useCallback(() => {
       return async () => {
         setisCreating(false);
+        setIsUpdating(false);
         setModalVisible(false);
+        setModalSettingsVisible(false);
         setDisabled(false);
         setStartDate(null);
         setEndDate(null);
         renderTabContent();
+        setCreationStage(1);
       };
     }, []),
   );
@@ -468,7 +477,165 @@ export default function Trip() {
     }
   };
 
-  return !isCreating ? (
+  const handleUpdateTrip = async (data: any) => {
+    let finalBannerUrl = trip.banner;
+    let imageWasUploaded = false;
+
+    try {
+      if (data.banner !== trip.banner) {
+        if (trip.banner && !trip.banner.startsWith("/assets")) {
+          await deleteImageFromSupabase(trip.banner, "banners");
+        }
+
+        if (data.banner && data.banner.startsWith("file://")) {
+          finalBannerUrl = await uploadImageToSupabase(data.banner, "banners");
+          imageWasUploaded = true;
+        } else {
+          finalBannerUrl = data.banner;
+        }
+      }
+
+      const { destinations, selectedUsers, banner, ...tripCoreData } = data;
+
+      const formattedTripData = {
+        ...tripCoreData,
+        start_date: tripCoreData.start_date
+          ? new Date(tripCoreData.start_date).toISOString()
+          : null,
+        end_date: tripCoreData.end_date
+          ? new Date(tripCoreData.end_date).toISOString()
+          : null,
+      };
+
+      const oldDestinations = trip.destinations || [];
+      const newDestinationsStrs = destinations || [];
+      const oldDestinationsStrs = oldDestinations.map(
+        (d: any) => d.destination,
+      );
+
+      const createdDestinations: any[] = [];
+      const deletedDestinations: string[] = [];
+
+      oldDestinations.forEach((oldDest: any) => {
+        if (!newDestinationsStrs.includes(oldDest.destination)) {
+          deletedDestinations.push(oldDest.destination_id);
+        }
+      });
+
+      newDestinationsStrs.forEach((destStr: string) => {
+        if (!oldDestinationsStrs.includes(destStr)) {
+          createdDestinations.push({
+            destination_id: Crypto.randomUUID(),
+            trip_id: trip.trip_id,
+            destination: destStr,
+          });
+        }
+      });
+
+      const oldDiffDays = getDiffInDays(trip.start_date, trip.end_date);
+      const newDiffDays = getDiffInDays(
+        formattedTripData.start_date,
+        formattedTripData.end_date,
+      );
+
+      const updatedLocations: any[] = [];
+
+      if (oldDiffDays > newDiffDays) {
+        const currentLocations = trip.locations || [];
+
+        currentLocations.forEach((loc: any) => {
+          if (loc.day > newDiffDays) {
+            const { deleted_at, created_at, updated_at, ...cleanLoc } = loc;
+
+            updatedLocations.push({
+              ...cleanLoc,
+              day: 1,
+              scheduled_time: null,
+            });
+          }
+        });
+      }
+
+      const myChanges = {
+        trips: {
+          created: [],
+          updated: [
+            {
+              trip_id: trip.trip_id,
+              banner: finalBannerUrl,
+              ...formattedTripData,
+            },
+          ],
+          deleted: [],
+        },
+        destinations: {
+          created: createdDestinations,
+          updated: [],
+          deleted: deletedDestinations,
+        },
+        locations: {
+          created: [],
+          updated: updatedLocations,
+          deleted: [],
+        },
+      };
+
+      await pushChanges(myChanges);
+
+      const tripIndex = user.trips.findIndex(
+        (t: any) => t.trip_id === trip.trip_id,
+      );
+
+      if (tripIndex !== -1) {
+        const currentLocations = trip.locations || [];
+        const nextLocations = currentLocations.map((loc: any) => {
+          const changedLoc = updatedLocations.find(
+            (ul) => ul.location_id === loc.location_id,
+          );
+          return changedLoc ? changedLoc : loc;
+        });
+
+        user.trips[tripIndex] = {
+          ...user.trips[tripIndex],
+          ...myChanges.trips.updated[0],
+          destinations: [
+            ...oldDestinations.filter(
+              (d: any) => !deletedDestinations.includes(d.destination_id),
+            ),
+            ...createdDestinations,
+          ],
+          locations: nextLocations,
+        };
+
+        setTrip(user.trips[tripIndex]);
+        setIsUpdated(true);
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error updating trip. Please try again.");
+
+      if (imageWasUploaded && finalBannerUrl) {
+        try {
+          await deleteImageFromSupabase(finalBannerUrl, "banners");
+        } catch (cleanupError) {
+          console.error("Error cleaning up image:", cleanupError);
+        }
+      }
+    }
+  };
+
+  async function handleEditAction(data: any) {
+    if (creationStage !== 3) {
+      setCreationStage(creationStage + 1);
+    } else {
+      await handleUpdateTrip(data);
+
+      setIsUpdating(false);
+      setCreationStage(1);
+    }
+  }
+
+  return !isCreating && !isUpdating ? (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
@@ -564,19 +731,64 @@ export default function Trip() {
       >
         <View style={styles.options}>
           {origin !== "discover" ? (
-            <Pressable
-              style={styles.dangerAction}
-              onPress={confirmDangerAction}
-            >
-              <Text style={styles.dangerText}>
-                {isOneMemberOnly
-                  ? `Delete "${trip?.name || "Trip"}"`
-                  : `Leave "${trip?.name || "Trip"}"`}
-              </Text>
-            </Pressable>
+            <>
+              <Pressable
+                style={styles.action}
+                onPress={() => setIsUpdating(true)}
+              >
+                <Text style={styles.optionsText}>
+                  {`Edit "${trip?.name || "Trip"}"`}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.dangerAction}
+                onPress={confirmDangerAction}
+              >
+                <Text style={styles.dangerText}>
+                  {isOneMemberOnly
+                    ? `Delete "${trip?.name || "Trip"}"`
+                    : `Leave "${trip?.name || "Trip"}"`}
+                </Text>
+              </Pressable>
+            </>
           ) : null}
         </View>
       </StrataModal>
+    </View>
+  ) : isUpdating ? (
+    <View style={[styles.page, { paddingHorizontal: 40 }]}>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: isUpdating
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
+      <StrataHeader
+        classname={[
+          styles.header,
+          isUpdating && { justifyContent: "flex-start" },
+        ]}
+        icons={[
+          {
+            icon: <ArrowIcon color={Colors.primaryDark} />,
+            classname: !isUpdating ? styles.icon : styles.bgIcon,
+            onPress: () =>
+              creationStage === 1
+                ? setIsUpdating(!isUpdating)
+                : setCreationStage(creationStage - 1),
+          },
+        ]}
+      />
+
+      <TripCreationForm
+        stage={creationStage}
+        handleSubmit={handleEditAction}
+        tripData={trip}
+        hideInvite={true}
+      />
     </View>
   ) : (
     <View style={[styles.page, { paddingHorizontal: 40 }]}>
@@ -611,3 +823,5 @@ export default function Trip() {
     </View>
   );
 }
+
+// #TODO: Clean this page code
