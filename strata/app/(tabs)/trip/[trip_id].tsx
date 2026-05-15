@@ -14,6 +14,7 @@ import {
   getTripByID,
   LeaveTrip,
   pushChanges,
+  updateBudget,
   uploadImageToSupabase,
   uploadTicketToSupabase,
 } from "@/utils/StrataApiService";
@@ -31,8 +32,14 @@ import { StrataSmallButton } from "@/components/strata-small-button/StrataButton
 import { BookmarkIcon, TreePalmIcon } from "@/components/icons";
 import { StrataModal } from "@/components/strata-modal/StrataModal";
 import { StrataCalendar } from "@/components/strata-calendar/StrataCalendar";
-import { StrataCTA, TripCreationForm } from "@/components";
+import {
+  StrataCTA,
+  StrataForm,
+  StrataInput,
+  TripCreationForm,
+} from "@/components";
 import { user } from "@/utils/userService";
+import { floatInputProperties } from "@/utils/input-properties";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -48,6 +55,8 @@ export default function Trip() {
   const [endDate, setEndDate] = useState<string | null>(null);
   const [disabled, setDisabled] = useState(false);
   const [isUpdated, setIsUpdated] = useState(false);
+  const [isSettingBudget, setIsSettingBudget] = useState(false);
+  const [budget, setBudget] = useState("");
 
   const { trip_id, origin, creator } = useLocalSearchParams() as {
     trip_id: string;
@@ -113,6 +122,9 @@ export default function Trip() {
         setEndDate(null);
         renderTabContent();
         setCreationStage(1);
+        setIsUpdated(false);
+        setIsSettingBudget(false);
+        setBudget("");
       };
     }, []),
   );
@@ -635,6 +647,20 @@ export default function Trip() {
     }
   }
 
+  const handleUpdateBudget = async () => {
+    try {
+      const bugetValue = budget !== "" ? parseFloat(budget) : null;
+
+      await updateBudget(trip_id, bugetValue);
+
+      setIsSettingBudget(false);
+      setBudget("");
+    } catch (error) {
+      console.error(error);
+      alert("Error updating trip. Please try again.");
+    }
+  };
+
   return !isCreating && !isUpdating ? (
     <View style={styles.page}>
       <Tabs.Screen
@@ -731,27 +757,84 @@ export default function Trip() {
       >
         <View style={styles.options}>
           {origin !== "discover" ? (
-            <>
-              <Pressable
-                style={styles.action}
-                onPress={() => setIsUpdating(true)}
-              >
-                <Text style={styles.optionsText}>
-                  {`Edit "${trip?.name || "Trip"}"`}
-                </Text>
-              </Pressable>
+            isSettingBudget ? (
+              <>
+                <StrataHeader
+                  classname={[
+                    styles.header,
+                    {
+                      justifyContent: "flex-start",
+                      alignItems: "flex-start",
+                      marginTop: 0,
+                    },
+                  ]}
+                  icons={[
+                    {
+                      icon: <ArrowIcon color={Colors.primaryDark} />,
+                      classname: styles.bgIcon,
+                      onPress: () => setIsSettingBudget(false),
+                    },
+                  ]}
+                />
 
-              <Pressable
-                style={styles.dangerAction}
-                onPress={confirmDangerAction}
-              >
-                <Text style={styles.dangerText}>
-                  {isOneMemberOnly
-                    ? `Delete "${trip?.name || "Trip"}"`
-                    : `Leave "${trip?.name || "Trip"}"`}
-                </Text>
-              </Pressable>
-            </>
+                <StrataForm
+                  elements={[
+                    {
+                      label: "Trip Budget",
+                      element: (
+                        <StrataInput
+                          properties={{
+                            ...floatInputProperties,
+                            value: budget,
+                            onChangeText: setBudget,
+                          }}
+                        />
+                      ),
+                    },
+                    {
+                      element: (
+                        <StrataCTA
+                          text="Set Budget"
+                          isDisabled={false}
+                          onPress={handleUpdateBudget}
+                          classname={{ marginTop: 40 }}
+                          textclassname={{ ...Typography.cta }}
+                        />
+                      ),
+                    },
+                  ]}
+                />
+              </>
+            ) : (
+              <>
+                <Pressable
+                  style={styles.action}
+                  onPress={() => setIsSettingBudget(true)}
+                >
+                  <Text style={styles.optionsText}>Trip Budget</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.action}
+                  onPress={() => setIsUpdating(true)}
+                >
+                  <Text style={styles.optionsText}>
+                    {`Edit "${trip?.name || "Trip"}"`}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.dangerAction}
+                  onPress={confirmDangerAction}
+                >
+                  <Text style={styles.dangerText}>
+                    {isOneMemberOnly
+                      ? `Delete "${trip?.name || "Trip"}"`
+                      : `Leave "${trip?.name || "Trip"}"`}
+                  </Text>
+                </Pressable>
+              </>
+            )
           ) : null}
         </View>
       </StrataModal>
