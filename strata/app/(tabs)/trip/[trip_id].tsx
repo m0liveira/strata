@@ -57,6 +57,7 @@ export default function Trip() {
   const [isUpdated, setIsUpdated] = useState(false);
   const [isSettingBudget, setIsSettingBudget] = useState(false);
   const [budget, setBudget] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
 
   const { trip_id, origin, creator } = useLocalSearchParams() as {
     trip_id: string;
@@ -125,91 +126,10 @@ export default function Trip() {
         setIsUpdated(false);
         setIsSettingBudget(false);
         setBudget("");
+        setSelectedLocation(null);
       };
     }, []),
   );
-
-  function renderTabContent() {
-    // #TODO: Add real map and itinerary content here. For now, just placeholders.
-    if (currentTab === "Map") {
-      return <Text>Hello World</Text>;
-    }
-
-    const locations = trip?.locations || [];
-
-    if (currentTab === "Itinerary") {
-      if (locations.length === 0) {
-        return (
-          <View style={styles.emptyStateContainer}>
-            <EmptyState
-              globeClassName={styles.globe}
-              buttons={
-                origin === "discover"
-                  ? []
-                  : [
-                      <StrataButton
-                        key="add-spot"
-                        title="Add a Spot"
-                        text="What do you wish to see?"
-                        imageSource={require("@/assets/images/pin.png")}
-                        onPress={() => setisCreating(true)}
-                      />,
-                    ]
-              }
-            />
-          </View>
-        );
-      }
-
-      return <StrataLocationGroup locations={locations} origin={origin} />;
-    }
-
-    if (currentTab.startsWith("Day")) {
-      const dayNumber = parseInt(currentTab.split(" ")[1], 10);
-
-      const dayLocations = locations
-        .filter((loc: any) => loc.day === dayNumber)
-        .sort((a: any, b: any) => {
-          if (!a.scheduled_time && !b.scheduled_time) return 0;
-
-          if (!a.scheduled_time) return 1;
-
-          if (!b.scheduled_time) return -1;
-
-          return (
-            new Date(a.scheduled_time).getTime() -
-            new Date(b.scheduled_time).getTime()
-          );
-        });
-
-      if (dayLocations.length === 0) {
-        return (
-          <View style={styles.emptyStateContainer}>
-            <EmptyState
-              globeClassName={styles.globe}
-              buttons={
-                origin === "discover"
-                  ? []
-                  : [
-                      <StrataButton
-                        key="add-spot"
-                        title="Add a Spot"
-                        text="What do you wish to see?"
-                        imageSource={require("@/assets/images/pin.png")}
-                        onPress={() => setisCreating(true)}
-                      />,
-                    ]
-              }
-            />
-          </View>
-        );
-      }
-
-      return <StrataLocationGroup locations={dayLocations} origin={origin} />;
-    }
-
-    return null;
-  }
 
   const createSpot = async (data: any) => {
     let finalTicketUrl = null;
@@ -405,12 +325,19 @@ export default function Trip() {
   };
 
   const confirmDangerAction = () => {
-    const actionText = isOneMemberOnly ? "Delete" : "Leave";
-    const tripName = trip?.name || "Trip";
+    const actionText = !selectedLocation
+      ? isOneMemberOnly
+        ? "Delete"
+        : "Leave"
+      : "Delete";
+
+    const name = !selectedLocation
+      ? trip?.name || "Trip"
+      : selectedLocation.name;
 
     Alert.alert(
-      `${actionText} "${tripName}" `,
-      `Are you sure you want to ${actionText.toLowerCase()} "${tripName}"? This action cannot be undone.`,
+      `${actionText} "${name}" `,
+      `Are you sure you want to ${actionText.toLowerCase()} "${name}"? This action cannot be undone.`,
       [
         {
           text: "Cancel",
@@ -419,7 +346,10 @@ export default function Trip() {
         {
           text: actionText,
           style: "destructive",
-          onPress: () => handleTripDangerAction(),
+          onPress: () =>
+            !selectedLocation
+              ? handleTripDangerAction()
+              : handleDeleteLocation(),
         },
       ],
     );
@@ -490,6 +420,10 @@ export default function Trip() {
   };
 
   const handleUpdateTrip = async (data: any) => {
+    if (isActionOnGoing) return;
+
+    isActionOnGoing = true;
+
     let finalBannerUrl = trip.banner;
     let imageWasUploaded = false;
 
@@ -621,10 +555,12 @@ export default function Trip() {
 
         setTrip(user.trips[tripIndex]);
         setIsUpdated(true);
+        isActionOnGoing = false;
       }
     } catch (error) {
       console.error(error);
       alert("Error updating trip. Please try again.");
+      isActionOnGoing = false;
 
       if (imageWasUploaded && finalBannerUrl) {
         try {
@@ -648,6 +584,10 @@ export default function Trip() {
   }
 
   const handleUpdateBudget = async () => {
+    if (isActionOnGoing) return;
+
+    isActionOnGoing = true;
+
     try {
       const bugetValue = budget !== "" ? parseFloat(budget) : null;
 
@@ -655,11 +595,152 @@ export default function Trip() {
 
       setIsSettingBudget(false);
       setBudget("");
+      isActionOnGoing = false;
     } catch (error) {
       console.error(error);
+      isActionOnGoing = false;
       alert("Error updating trip. Please try again.");
     }
   };
+
+  const handleDeleteLocation = async () => {
+    if (isActionOnGoing) return;
+
+    isActionOnGoing = true;
+
+    try {
+      const data = {
+        locations: {
+          created: [],
+          updated: [],
+          deleted: [selectedLocation.location_id],
+        },
+      };
+
+      await pushChanges(data);
+
+      const tripIndex = user.trips.findIndex((t: any) => t.trip_id === trip_id);
+
+      if (tripIndex !== -1) {
+        user.trips[tripIndex] = {
+          ...user.trips[tripIndex],
+          locations: (user.trips[tripIndex].locations || []).filter(
+            (loc: any) => loc.location_id !== selectedLocation.location_id,
+          ),
+        };
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsUpdated(true);
+      isActionOnGoing = false;
+      setModalSettingsVisible(false);
+      setSelectedLocation(null);
+    }
+  };
+
+  const handleLocationPress = (id: string | number) => {
+    const selectedLocation = trip.locations.find(
+      (loc: any) => loc.location_id === id,
+    );
+
+    setSelectedLocation(selectedLocation);
+    setModalSettingsVisible(true);
+  };
+
+  function renderTabContent() {
+    // #TODO: Add real map and itinerary content here. For now, just placeholders.
+    if (currentTab === "Map") {
+      return <Text>Hello World</Text>;
+    }
+
+    const locations = trip?.locations || [];
+
+    if (currentTab === "Itinerary") {
+      if (locations.length === 0) {
+        return (
+          <View style={styles.emptyStateContainer}>
+            <EmptyState
+              globeClassName={styles.globe}
+              buttons={
+                origin === "discover"
+                  ? []
+                  : [
+                      <StrataButton
+                        key="add-spot"
+                        title="Add a Spot"
+                        text="What do you wish to see?"
+                        imageSource={require("@/assets/images/pin.png")}
+                        onPress={() => setisCreating(true)}
+                      />,
+                    ]
+              }
+            />
+          </View>
+        );
+      }
+
+      return (
+        <StrataLocationGroup
+          locations={locations}
+          origin={origin}
+          onPress={handleLocationPress}
+        />
+      );
+    }
+
+    if (currentTab.startsWith("Day")) {
+      const dayNumber = parseInt(currentTab.split(" ")[1], 10);
+
+      const dayLocations = locations
+        .filter((loc: any) => loc.day === dayNumber)
+        .sort((a: any, b: any) => {
+          if (!a.scheduled_time && !b.scheduled_time) return 0;
+
+          if (!a.scheduled_time) return 1;
+
+          if (!b.scheduled_time) return -1;
+
+          return (
+            new Date(a.scheduled_time).getTime() -
+            new Date(b.scheduled_time).getTime()
+          );
+        });
+
+      if (dayLocations.length === 0) {
+        return (
+          <View style={styles.emptyStateContainer}>
+            <EmptyState
+              globeClassName={styles.globe}
+              buttons={
+                origin === "discover"
+                  ? []
+                  : [
+                      <StrataButton
+                        key="add-spot"
+                        title="Add a Spot"
+                        text="What do you wish to see?"
+                        imageSource={require("@/assets/images/pin.png")}
+                        onPress={() => setisCreating(true)}
+                      />,
+                    ]
+              }
+            />
+          </View>
+        );
+      }
+
+      return (
+        <StrataLocationGroup
+          locations={dayLocations}
+          origin={origin}
+          onPress={handleLocationPress}
+        />
+      );
+    }
+
+    return null;
+  }
 
   return !isCreating && !isUpdating ? (
     <View style={styles.page}>
@@ -753,7 +834,10 @@ export default function Trip() {
 
       <StrataModal
         isVisible={modalSettingsVisible}
-        onClose={() => setModalSettingsVisible(false)}
+        onClose={() => {
+          setModalSettingsVisible(false);
+          setSelectedLocation(null);
+        }}
       >
         <View style={styles.options}>
           {origin !== "discover" ? (
@@ -807,19 +891,23 @@ export default function Trip() {
               </>
             ) : (
               <>
-                <Pressable
-                  style={styles.action}
-                  onPress={() => setIsSettingBudget(true)}
-                >
-                  <Text style={styles.optionsText}>Trip Budget</Text>
-                </Pressable>
+                {!selectedLocation && (
+                  <Pressable
+                    style={styles.action}
+                    onPress={() => setIsSettingBudget(true)}
+                  >
+                    <Text style={styles.optionsText}>Trip Budget</Text>
+                  </Pressable>
+                )}
 
                 <Pressable
                   style={styles.action}
                   onPress={() => setIsUpdating(true)}
                 >
                   <Text style={styles.optionsText}>
-                    {`Edit "${trip?.name || "Trip"}"`}
+                    {!selectedLocation
+                      ? `Edit "${trip?.name || "Trip"}"`
+                      : `Edit "${selectedLocation.name}"`}
                   </Text>
                 </Pressable>
 
@@ -828,9 +916,11 @@ export default function Trip() {
                   onPress={confirmDangerAction}
                 >
                   <Text style={styles.dangerText}>
-                    {isOneMemberOnly
-                      ? `Delete "${trip?.name || "Trip"}"`
-                      : `Leave "${trip?.name || "Trip"}"`}
+                    {!selectedLocation
+                      ? isOneMemberOnly
+                        ? `Delete "${trip?.name || "Trip"}"`
+                        : `Leave "${trip?.name || "Trip"}"`
+                      : `Delete "${selectedLocation.name}"`}
                   </Text>
                 </Pressable>
               </>
