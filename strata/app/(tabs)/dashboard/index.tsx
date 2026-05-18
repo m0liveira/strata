@@ -47,6 +47,7 @@ import {
 } from "@/utils/generalFunctions";
 import { StrataSchedule } from "@/components/strata-schedule/StrataSchedule";
 import { BudgetScreen } from "@/components/screens/budget-screen/BudgetScreen";
+import { useTripSocket } from "@/hooks/useTripSocket";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -67,6 +68,15 @@ export default function MyTrips() {
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const fetchTrip = async (tripId: string) => {
+    try {
+      const tripData = await getTripByID(tripId);
+      setTrip(tripData);
+    } catch (error) {
+      console.error("Error fetching trip:", error);
+    }
+  };
 
   useEffect(() => {
     const loadProfiles = async () => {
@@ -119,16 +129,7 @@ export default function MyTrips() {
       setTrip(selectedTrip);
 
       if (selectedTrip && selectedTrip.trip_id) {
-        const fetchTrip = async () => {
-          try {
-            const tripData = await getTripByID(selectedTrip.trip_id);
-            setTrip(tripData);
-          } catch (error) {
-            console.error("Error fetching trip:", error);
-          }
-        };
-
-        fetchTrip();
+        fetchTrip(selectedTrip.trip_id);
       }
 
       return async () => {
@@ -144,6 +145,15 @@ export default function MyTrips() {
         setIsOpened(false);
       };
     }, []),
+  );
+
+  const isGroupTrip = trip?.members && trip.members.length > 1;
+
+  const { isConnected, messages, sendMessage } = useTripSocket(
+    isGroupTrip ? trip?.trip_id : undefined,
+    () => {
+      fetchTrip(trip?.trip_id);
+    },
   );
 
   function advanceToForm(bool: boolean) {
