@@ -69,7 +69,10 @@ export function TripHeader(props: TripHeaderProps) {
             />
           </Pressable>
 
-          <Pressable style={styles.iconBg} onPress={() => {}}>
+          <Pressable
+            style={styles.iconBg}
+            onPress={() => props.onPress && props.onPress()}
+          >
             <MoreIcon
               color={Colors.primaryDark}
               classname={[styles.icon, { width: 18 }]}

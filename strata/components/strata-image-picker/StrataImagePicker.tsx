@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Pressable,
@@ -16,6 +16,7 @@ import { UploadIcon, XCircleIcon } from "../icons";
 
 type ImagePickerProps = {
   onImagePicked: (uri: string | null) => void;
+  image?: string | null;
   classname?: {
     container?: StyleProp<ViewStyle>;
     image?: StyleProp<ImageStyle>;
@@ -24,6 +25,10 @@ type ImagePickerProps = {
 
 export function StrataImagePicker(props: ImagePickerProps) {
   const [imageUri, setImageUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    setImageUri(props.image ?? null);
+  }, [props.image]);
 
   const pickImage = async () => {
     if (Platform.OS !== "web") {

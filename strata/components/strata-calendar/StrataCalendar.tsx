@@ -119,6 +119,7 @@ export function StrataCalendar(props: StrataCalendarProps) {
 
   return (
     <Calendar
+      current={props.startDate || today}
       enableSwipeMonths={true}
       allowSelectionOutOfRange={false}
       minDate={today}

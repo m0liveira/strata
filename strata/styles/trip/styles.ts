@@ -66,5 +66,45 @@ export const styles = StyleSheet.create({
     },
     disabledText: {
         color: Colors.grey400
-    }
+    },
+    options: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 24,
+        flex: 1,
+        width: '100%',
+    },
+    dangerAction: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f96666',
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+        borderColor: '#ed6060',
+        width: '100%',
+        height: 54,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    },
+    action: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.grey100,
+        borderRadius: BorderRadius.md,
+        borderColor: Colors.grey200,
+        borderWidth: 1,
+        width: '100%',
+        height: 54,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+    },
+    dangerText: {
+        ...Typography.cta,
+        color: Colors.white,
+    },
+    optionsText: {
+        ...Typography.cta,
+        color: Colors.primaryDark,
+    },
 });

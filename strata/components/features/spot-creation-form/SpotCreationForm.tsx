@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { StrataCTA } from "@/components/strata-cta/StrataCTA";
@@ -18,6 +18,7 @@ import {
 type SpotCreationFormProps = {
   days: number;
   selectedDay: number;
+  spotData?: any;
   handleSubmit: (data: any) => void;
 };
 
@@ -36,7 +37,31 @@ export const SpotCreationForm = (props: SpotCreationFormProps) => {
     setMinute("00");
     setFileToUpload(null);
     setDay(props.selectedDay);
+
+    if (props.spotData && Object.keys(props.spotData).length !== 0) {
+      setName(props.spotData.name);
+      setIsScheduled(!!props.spotData.scheduled_time);
+
+      if (props.spotData.scheduled_time) {
+        const timePart = props.spotData.scheduled_time.split("T")[1];
+        const timeArray = timePart.split(":");
+
+        setHour(timeArray[0]);
+        setMinute(timeArray[1]);
+      } else {
+        setHour("09");
+        setMinute("00");
+      }
+
+      setFileToUpload(props.spotData.ticket_url);
+
+      setDay(props.spotData.day || props.selectedDay);
+    }
   };
+
+  useEffect(() => {
+    resetForm();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -126,7 +151,14 @@ export const SpotCreationForm = (props: SpotCreationFormProps) => {
     {
       label: "Ticket",
       element: (
-        <StrataFileUploader onFilePrepared={(file) => setFileToUpload(file)} />
+        <StrataFileUploader
+          onFilePrepared={(file) => setFileToUpload(file)}
+          file={
+            props.spotData && Object.keys(props.spotData).length !== 0
+              ? props.spotData.ticket_url
+              : null
+          }
+        />
       ),
     },
     {

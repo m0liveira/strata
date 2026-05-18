@@ -203,6 +203,45 @@ export const inviteToTrip = async (tripId: string, userId: number) => {
     }
 };
 
+export const updateBudget = async (tripId: string, personal_budget: number | null) => {
+    const response = await fetch(`${API_URL}/trip-members/${tripId}/budget`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.access_token}`,
+        },
+        body: JSON.stringify({ personal_budget }),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update budget");
+    }
+
+    return await response.json();
+};
+
+export const LeaveTrip = async (tripId: string) => {
+    try {
+        const response = await fetch(`${API_URL}/trip-members/${tripId}/leave`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to invite user to trip");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
 export const getTripByID = async (tripId: string) => {
     try {
         const response = await fetch(`${API_URL}/trips/${tripId}`, {

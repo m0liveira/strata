@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  View,
-  ScrollView,
-  StyleProp,
-  ViewStyle,
-} from "react-native";
+import { View, ScrollView, StyleProp, ViewStyle } from "react-native";
 import { styles } from "./styles";
 import { Location } from "@/types/models/location-model";
 import { StrataLocationCard } from "../strata-location-card/StrataLocationCard";
@@ -15,6 +10,7 @@ type LocationGroupProps = {
   classname?: StyleProp<ViewStyle>;
   locations: Location[];
   origin?: string;
+  onPress?: (id: string | number) => void;
 };
 
 export function StrataLocationGroup(props: LocationGroupProps) {
@@ -24,6 +20,7 @@ export function StrataLocationGroup(props: LocationGroupProps) {
         key={location.location_id}
         location={location}
         origin={props.origin}
+        onPress={props.onPress}
       />
     ));
 
