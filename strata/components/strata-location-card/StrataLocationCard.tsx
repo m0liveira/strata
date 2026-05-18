@@ -1,5 +1,14 @@
 import React from "react";
-import { Pressable, Text, View, StyleProp, ViewStyle } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  StyleProp,
+  ViewStyle,
+  Linking,
+  Platform,
+} from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { Colors } from "@/constants/global-styles";
 import { styles } from "./styles";
 import { Location } from "@/types/models/location-model";
@@ -27,6 +36,23 @@ export function StrataLocationCard(props: LocationCardProps) {
     });
   }
 
+  const handleOpenTicket = async () => {
+    const url = props.location.ticket_url;
+    if (!url) return;
+
+    let finalUrl = url;
+
+    if (Platform.OS === "android" && url.toLowerCase().endsWith(".pdf")) {
+      finalUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+    }
+
+    try {
+      await WebBrowser.openBrowserAsync(finalUrl);
+    } catch (error) {
+      console.error("Error opening browser:", error);
+    }
+  };
+
   return (
     <Pressable
       style={[styles.card, props.classname]}
@@ -39,11 +65,7 @@ export function StrataLocationCard(props: LocationCardProps) {
       </View>
 
       {props.location.ticket_url && props.origin !== "discover" && (
-        <Pressable
-          onPress={() => {
-            console.log("show ticket here");
-          }}
-        >
+        <Pressable onPress={() => handleOpenTicket()}>
           <QrCodeIcon color={Colors.primaryDark} classname={styles.icon} />
         </Pressable>
       )}

@@ -7,6 +7,7 @@ import {
   ViewStyle,
   Platform,
 } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { styles } from "./styles";
 import { ArrowIcon, PdfIcon, PlaneIcon } from "@/components/icons"; // Ajusta para os teus ícones
 import { Colors } from "@/constants/global-styles";
@@ -16,7 +17,6 @@ type DocumentsCardProps = {
   locations: any[];
   tripStartDate: string;
   onPressAll?: () => void;
-  onPressDocument?: (url: string) => void;
 };
 
 const getLocationDate = (loc: any, tripStartDate: string) => {
@@ -43,6 +43,22 @@ const getFileName = (url: string | null) => {
 export function StrataDocumentsCard(props: DocumentsCardProps) {
   const now = Date.now();
 
+  const handleOpenTicket = async (url: string) => {
+    if (!url) return;
+
+    let finalUrl = url;
+
+    if (Platform.OS === "android" && url.toLowerCase().endsWith(".pdf")) {
+      finalUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
+    }
+
+    try {
+      await WebBrowser.openBrowserAsync(finalUrl);
+    } catch (error) {
+      console.error("Error opening browser:", error);
+    }
+  };
+
   const documentsToRender = (props.locations || [])
     .filter((loc) => loc.ticket_url)
     .map((loc) => ({
@@ -66,8 +82,8 @@ export function StrataDocumentsCard(props: DocumentsCardProps) {
     })
     .slice(0, 3);
 
-    // #TODO: Add view ticket functionality
-    // #TODO: Add Route to trip/documents page
+  // #TODO: Add view ticket functionality
+  // #TODO: Add Route to trip/documents page
 
   return (
     <View style={[styles.card, props.classname]}>
@@ -98,7 +114,7 @@ export function StrataDocumentsCard(props: DocumentsCardProps) {
                 key={doc.location_id}
                 style={[styles.item, isLast && styles.itemLast]}
                 android_ripple={{ color: "rgba(0,0,0,0.05)" }}
-                // onPress={() => props.onPressDocument(doc.ticket_url)}
+                onPress={() => handleOpenTicket(doc.ticket_url)}
               >
                 <PlaneIcon color={Colors.grey600} classname={styles.icon} />
 
