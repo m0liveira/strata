@@ -1,4 +1,4 @@
-import { Text, View, Image, ScrollView } from "react-native";
+import { Text, View, Image, ScrollView, Pressable, Alert } from "react-native";
 import { styles } from "@/styles/profile/styles";
 import { StrataHeader, StrataInput } from "@/components";
 import {
@@ -11,7 +11,7 @@ import {
 } from "@/components/icons";
 import { Colors, Typography } from "@/constants/global-styles";
 import { useState, useEffect } from "react";
-import { user } from "@/utils/userService";
+import { logout, user } from "@/utils/userService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
@@ -26,6 +26,7 @@ import { TripCard } from "@/components/strata-trip-card/StrataTripCard";
 import { router } from "expo-router";
 import { StrataSocialUser } from "@/components/strata-social-user/StrataSocialUser";
 import { searchInputProperties } from "@/utils/input-properties";
+import { StrataModal } from "@/components/strata-modal/StrataModal";
 
 export default function Profile() {
   const [currentTab, setCurrentTab] = useState("Stats");
@@ -36,6 +37,7 @@ export default function Profile() {
   const [following, setFollowing] = useState<any[]>([]);
   const [searchedUser, setSearchedUser] = useState<any>(null);
   const [isSearched, setIsSearched] = useState(false);
+  const [modalSettingsVisible, setModalSettingsVisible] = useState(false);
 
   const tabs = ["Stats", "Social", "Shared"];
 
@@ -518,9 +520,26 @@ export default function Profile() {
     }
   };
 
+  const confirmDangerAction = () => {
+    Alert.alert(`Logout Confirmation`, `Are you sure you want to logout?`, [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          await logout();
+          router.replace("/pages/get-started");
+        },
+      },
+    ]);
+  };
+
   // #TODO: Go to users profiles
   // #TODO: Add confirmation alert for unfriending and unfollowing
-  
+
   return (
     <View style={styles.page}>
       <StrataHeader
@@ -534,7 +553,7 @@ export default function Profile() {
           {
             icon: <SettingsIcon color={Colors.primaryDark} />,
             classname: styles.icon,
-            onPress: () => {}, // #TODO: add settings functionality
+            onPress: () => setModalSettingsVisible(true),
           },
         ]}
       />
@@ -563,6 +582,24 @@ export default function Profile() {
       />
 
       {renderTabContent()}
+
+      <StrataModal
+        isVisible={modalSettingsVisible}
+        onClose={() => {
+          setModalSettingsVisible(false);
+        }}
+      >
+        <View style={styles.options}>
+          <>
+            <Pressable
+              style={styles.dangerAction}
+              onPress={confirmDangerAction}
+            >
+              <Text style={styles.dangerText}>Logout</Text>
+            </Pressable>
+          </>
+        </View>
+      </StrataModal>
     </View>
   );
 }

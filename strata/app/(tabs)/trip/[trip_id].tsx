@@ -40,6 +40,7 @@ import {
 } from "@/components";
 import { user } from "@/utils/userService";
 import { floatInputProperties } from "@/utils/input-properties";
+import { useTripSocket } from "@/hooks/useTripSocket";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -82,34 +83,43 @@ export default function Trip() {
     return Math.round(diffInMilliseconds / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  const fetchTrip = useCallback(async () => {
+    setIsUpdated(false);
+
+    const tripData =
+      origin === "discover"
+        ? await getSharedTripByID(trip_id)
+        : await getTripByID(trip_id);
+
+    setTrip(tripData);
+
+    if (tripData?.start_date && tripData?.end_date) {
+      const generatedTabs = Array.from(
+        { length: getDiffInDays(tripData.start_date, tripData.end_date) },
+        (_, i) => `Day ${i + 1}`,
+      );
+
+      setTabs(["Map", ...generatedTabs]);
+      setCurrentTab(generatedTabs[0]);
+      setDays(getDiffInDays(tripData.start_date, tripData.end_date));
+    } else {
+      setTabs(["Map", "Itinerary"]);
+      setCurrentTab("Itinerary");
+    }
+  }, [origin, trip_id]);
+
   useEffect(() => {
-    const fetchTrip = async () => {
-      setIsUpdated(false);
-
-      const tripData =
-        origin === "discover"
-          ? await getSharedTripByID(trip_id)
-          : await getTripByID(trip_id);
-
-      setTrip(tripData);
-
-      if (tripData?.start_date && tripData?.end_date) {
-        const generatedTabs = Array.from(
-          { length: getDiffInDays(tripData.start_date, tripData.end_date) },
-          (_, i) => `Day ${i + 1}`,
-        );
-
-        setTabs(["Map", ...generatedTabs]);
-        setCurrentTab(generatedTabs[0]);
-        setDays(getDiffInDays(tripData.start_date, tripData.end_date));
-      } else {
-        setTabs(["Map", "Itinerary"]);
-        setCurrentTab("Itinerary");
-      }
-    };
-
     fetchTrip();
-  }, [origin, trip_id, isUpdated]);
+  }, [fetchTrip, isUpdated]);
+
+  const isGroupTrip = trip?.members && trip.members.length > 1;
+
+  const { isConnected, messages, sendMessage } = useTripSocket(
+    isGroupTrip ? trip?.trip_id : undefined,
+    () => {
+      fetchTrip();
+    },
+  );
 
   useFocusEffect(
     useCallback(() => {
