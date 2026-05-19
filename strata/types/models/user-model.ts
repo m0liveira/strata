@@ -14,6 +14,7 @@ export type User = {
     followers: number[];
     trips: any[];
     friends_profiles?: PublicUser[],
+    pending_trips: any[],
 }
 
 export type PublicUser = {

@@ -6,6 +6,7 @@ type HeaderProps = {
   icons: {
     icon: React.ReactNode;
     classname?: StyleProp<ViewStyle>;
+    hasNotification?: boolean;
     onPress: () => void;
   }[];
 };
@@ -16,6 +17,7 @@ export function StrataHeader(props: HeaderProps) {
       {props.icons.map((item, index) => (
         <Pressable key={index} onPress={item.onPress} style={item.classname}>
           {item.icon}
+          {item.hasNotification && <View style={styles.notificationDot} />}
         </Pressable>
       ))}
     </View>

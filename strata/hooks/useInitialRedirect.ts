@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { getUserData } from "@/utils/StrataApiService";
+import { getPendingFriends, getPendingTrips, getUserData } from "@/utils/StrataApiService";
 import { user } from "@/utils/userService";
 import { countryData, getFullCountriesData } from "@/utils/countriesApiService";
 
@@ -19,8 +19,18 @@ export const useInitialRedirect = () => {
                 // #TODO: Implement new changes to data fetching and caching logic to the login and register flow.
                 // #NOTE: Implement this new logic in a service file or utility file
 
-                const userData = await getUserData();
-                Object.assign(user, userData);
+                const [userData, pendingFriends, pendingTrips] = await Promise.all([
+                    getUserData(),
+                    getPendingFriends(),
+                    getPendingTrips(),
+                ]);
+
+                Object.assign(user, {
+                    ...userData,
+                    pending_trips: pendingTrips,
+                    pending_friends: pendingFriends.filter(
+                        (friend: any) => friend.receiver_id === userData.user_id),
+                });
 
                 const cachedCountriesData = await AsyncStorage.getItem("countries_data");
 

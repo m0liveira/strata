@@ -208,8 +208,7 @@ export default function Profile() {
 
   const handleAddFriend = async (userToAdd: any) => {
     try {
-      await sendFriendRequest(userToAdd.id);
-      user.pending_friends = [...(user.pending_friends || []), userToAdd.id];
+      await sendFriendRequest(userToAdd.user_id);
     } catch (error) {
       console.error("Error adding friend:", error);
     }
@@ -217,13 +216,13 @@ export default function Profile() {
 
   const handleRemoveFriend = async (userToRemove: any) => {
     try {
-      await declineFriendRequest(userToRemove.id);
+      await declineFriendRequest(userToRemove.user_id);
 
       user.friends = (user.friends || []).filter(
-        (id: number) => id !== userToRemove.id,
+        (id: number) => id !== userToRemove.user_id,
       );
       user.friends_profiles = (user.friends_profiles || []).filter(
-        ({ user_id }: { user_id: number }) => user_id !== userToRemove.id,
+        ({ user_id }: { user_id: number }) => user_id !== userToRemove.user_id,
       );
     } catch (error) {
       console.error("Error Removing friend:", error);
@@ -232,10 +231,10 @@ export default function Profile() {
 
   const handleRemoveFollow = async (userToRemove: any) => {
     try {
-      await stopFollowingUser(userToRemove.id);
+      await stopFollowingUser(userToRemove.user_id);
 
       user.following = (user.following || []).filter(
-        (id: number) => id !== userToRemove.id,
+        (id: number) => id !== userToRemove.user_id,
       );
     } catch (error) {
       console.error("Error Removing follow:", error);
@@ -257,21 +256,22 @@ export default function Profile() {
     );
   };
 
-  const handleAction = (relationship: string, user: any) => {
+  const handleAction = (relationship: string, targetedUser: any) => {
     switch (relationship) {
       case "friend":
-        if (
-          user.pending_friends?.includes(user.id) ||
-          user.friends?.includes(user.id)
-        ) {
-          handleRemoveFriend(user);
-        } else {
-          handleAddFriend(user);
+        if (user.friends?.includes(targetedUser.user_id)) {
+          handleRemoveFriend(targetedUser);
+        } else if (!user.pending_friends?.includes(targetedUser.user_id)) {
+          handleAddFriend(targetedUser);
+
+          setSearchedUser(null);
+          setSearch("");
+          setIsSearched(false);
         }
         break;
 
       default:
-        handleRemoveFollow(user);
+        handleRemoveFollow(targetedUser);
         break;
     }
   };
@@ -397,7 +397,7 @@ export default function Profile() {
                   rightIcon={
                     user.friends_profiles?.some(
                       (p: any) => p.username === searchedUser.username,
-                    ) || !user.pending_friends?.includes(searchedUser.id) ? (
+                    ) && !user.pending_friends?.includes(searchedUser.id) ? (
                       <RemoveUserIcon
                         color={Colors.secondaryDark}
                         classname={styles.actionIcon}
@@ -410,7 +410,7 @@ export default function Profile() {
                     )
                   }
                   onIconPress={() => {
-                    handleAction("friend", searchedUser);
+                    confirmAction("friend", searchedUser);
                   }}
                 />
               )}
@@ -440,7 +440,7 @@ export default function Profile() {
                       />
                     }
                     onIconPress={() => {
-                      handleAction("friend", friend);
+                      confirmAction("friend", friend);
                     }}
                   />
                 ))
@@ -467,7 +467,7 @@ export default function Profile() {
                       />
                     }
                     onIconPress={() => {
-                      handleAction("follow", follow);
+                      confirmAction("follow", follow);
                     }}
                   />
                 ))
@@ -535,6 +535,26 @@ export default function Profile() {
         },
       },
     ]);
+  };
+
+  const confirmAction = (relationship: string, user: any) => {
+    Alert.alert(
+      `${relationship} Confirmation`,
+      `Are you sure you want to ${relationship}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Confirm",
+          style: "default",
+          onPress: async () => {
+            handleAction(relationship.toLowerCase(), user);
+          },
+        },
+      ],
+    );
   };
 
   // #TODO: Go to users profiles

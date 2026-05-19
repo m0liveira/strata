@@ -165,4 +165,8 @@ export const CommonStyles = StyleSheet.create({
     marginBottom: 50,
     overflow: 'hidden',
   },
+  visualizer: {
+    borderWidth: 1,
+    borderColor: Colors.blue500
+  }
 });
