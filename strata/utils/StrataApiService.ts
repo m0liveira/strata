@@ -160,6 +160,28 @@ export const declineFriendRequest = async (userId: number) => {
     }
 };
 
+export const acceptFriendRequest = async (userId: number) => {
+    try {
+        const response = await fetch(`${API_URL}/friendships/accept/${userId}`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to accept friend request");
+        }
+
+        return await response.json();
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
 export const stopFollowingUser = async (userId: number) => {
     try {
         const response = await fetch(`${API_URL}/follows/${userId}`, {
@@ -178,6 +200,27 @@ export const stopFollowingUser = async (userId: number) => {
         return await response.json();
     }
     catch (error) {
+        throw error;
+    }
+};
+
+export const getPendingFriends = async () => {
+    try {
+        const response = await fetch(`${API_URL}/friendships/pending`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get pending friends");
+        }
+
+        return await response.json();
+    } catch (error) {
         throw error;
     }
 };
@@ -318,6 +361,48 @@ export const getSharedTripByID = async (tripId: string) => {
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || "Failed to get trip");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const acceptTripInvite = async (tripId: string) => {
+    try {
+        const response = await fetch(`${API_URL}/trip-members/${tripId}/accept`, {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to join trip");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getPendingTrips = async () => {
+    try {
+        const response = await fetch(`${API_URL}/trip-members/invites`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get pending trips");
         }
 
         return await response.json();

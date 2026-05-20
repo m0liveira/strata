@@ -14,6 +14,7 @@ export const user: User = {
     followers: [],
     trips: [],
     friends_profiles: [],
+    pending_trips: [],
 }
 
 export const logout = async () => {
@@ -31,4 +32,5 @@ export const logout = async () => {
     user.followers = [];
     user.trips = [];
     user.friends_profiles = [];
+    user.pending_trips = [];
 };

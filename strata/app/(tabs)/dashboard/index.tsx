@@ -48,6 +48,7 @@ import {
 import { StrataSchedule } from "@/components/strata-schedule/StrataSchedule";
 import { BudgetScreen } from "@/components/screens/budget-screen/BudgetScreen";
 import { useTripSocket } from "@/hooks/useTripSocket";
+import { Notifications } from "@/components/features/notifications/Notifications";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -64,6 +65,7 @@ export default function MyTrips() {
   const [minute, setMinute] = useState("30");
   const [selectedSpot, setSelectedSpot] = useState<any>({});
   const [isOpened, setIsOpened] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
 
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
@@ -99,7 +101,7 @@ export default function MyTrips() {
   }, []);
 
   useFocusEffect(
-    useCallback(() => {
+    useCallback(() => {      
       let selectedTrip = null;
 
       if (user.trips?.length > 0) {
@@ -143,6 +145,7 @@ export default function MyTrips() {
         setMinute("30");
         setSelectedSpot({});
         setIsOpened(false);
+        setNotificationVisible(false);
       };
     }, []),
   );
@@ -793,7 +796,20 @@ export default function MyTrips() {
     }
   }
 
-  return (
+  return notificationVisible ? (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      <Notifications
+        pending={{ friends: user.pending_friends, trips: user.pending_trips }}
+        setVisible={setNotificationVisible}
+      />
+    </>
+  ) : (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
@@ -821,8 +837,12 @@ export default function MyTrips() {
               <ArrowIcon color={Colors.primaryDark} />
             ),
             classname: !isCreating ? styles.icon : styles.bgIcon,
+            hasNotification:
+              user.pending_friends.length > 0 || user.pending_trips.length > 0,
             onPress: !isCreating
-              ? () => {} // #TODO: Add notification functionality
+              ? () => {
+                  setNotificationVisible(true);
+                }
               : () =>
                   creationStage === 0
                     ? setisCreating(!isCreating)
