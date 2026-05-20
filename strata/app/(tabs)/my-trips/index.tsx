@@ -19,6 +19,7 @@ import {
 } from "@/utils/StrataApiService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
 import { TripCard } from "@/components/strata-trip-card/StrataTripCard";
+import { Notifications } from "@/components/features/notifications/Notifications";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -26,6 +27,7 @@ export default function MyTrips() {
   const [creationStage, setCreationStage] = useState(0);
   const [currentTab, setCurrentTab] = useState("Upcoming");
   const [trips, setTrips] = useState<any[]>([]);
+  const [notificationVisible, setNotificationVisible] = useState(false);
 
   const tabs = ["Upcoming", "Past trips"];
   const today = new Date();
@@ -198,7 +200,22 @@ export default function MyTrips() {
       return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
     });
 
-  return (
+  return notificationVisible ? (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: notificationVisible
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
+      <Notifications
+        pending={{ friends: user.pending_friends, trips: user.pending_trips }}
+        setVisible={setNotificationVisible}
+      />
+    </>
+  ) : (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
@@ -222,8 +239,14 @@ export default function MyTrips() {
               <ArrowIcon color={Colors.primaryDark} />
             ),
             classname: !isCreating ? styles.icon : styles.bgIcon,
+            hasNotification:
+              (user.pending_friends.length > 0 ||
+                user.pending_trips.length > 0) &&
+              !isCreating,
             onPress: !isCreating
-              ? () => {} // #TODO: add notification functionality
+              ? () => {
+                  setNotificationVisible(true);
+                }
               : () =>
                   creationStage === 0
                     ? setisCreating(!isCreating)

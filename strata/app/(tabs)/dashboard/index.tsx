@@ -101,7 +101,7 @@ export default function MyTrips() {
   }, []);
 
   useFocusEffect(
-    useCallback(() => {
+    useCallback(() => {      
       let selectedTrip = null;
 
       if (user.trips?.length > 0) {

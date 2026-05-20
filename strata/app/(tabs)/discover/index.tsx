@@ -6,11 +6,14 @@ import { StrataHeader, StrataButton, StrataInput } from "@/components";
 import { BellIcon, SliderHorizontalIcon } from "@/components/icons";
 import { styles } from "@/styles/discover/styles";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
-import { router, useFocusEffect } from "expo-router";
+import { router, Tabs, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { getPublicTrips, getSocialTrips } from "@/utils/StrataApiService";
 import { TripCard } from "@/components/strata-trip-card/StrataTripCard";
 import { searchInputProperties } from "@/utils/input-properties";
+import { user } from "@/utils/userService";
+import { Notifications } from "@/components/features/notifications/Notifications";
+import { screenOptions } from "../_layout";
 
 const tabs = ["Explore", "Following"];
 
@@ -19,6 +22,7 @@ export default function Discover() {
   const [publicTrips, setPublicTrips] = useState<any>([]);
   const [socialTrips, setSocialTrips] = useState<any>([]);
   const [search, setSearch] = useState<string>("");
+  const [notificationVisible, setNotificationVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -182,15 +186,42 @@ export default function Discover() {
     );
   };
 
-  return (
+  return notificationVisible ? (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: notificationVisible
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
+      <Notifications
+        pending={{ friends: user.pending_friends, trips: user.pending_trips }}
+        setVisible={setNotificationVisible}
+      />
+    </>
+  ) : (
     <View style={styles.page}>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: notificationVisible
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
       <StrataHeader
         classname={[styles.header]}
         icons={[
           {
             icon: <BellIcon color={Colors.primaryDark} />,
             classname: styles.icon,
-            onPress: () => {}, // #TODO: Add notification functionality
+            hasNotification:
+              user.pending_friends.length > 0 || user.pending_trips.length > 0,
+            onPress: () => {
+              setNotificationVisible(true);
+            },
           },
         ]}
       />

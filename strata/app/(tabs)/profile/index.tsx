@@ -23,10 +23,12 @@ import {
   stopFollowingUser,
 } from "@/utils/StrataApiService";
 import { TripCard } from "@/components/strata-trip-card/StrataTripCard";
-import { router } from "expo-router";
+import { router, Tabs } from "expo-router";
 import { StrataSocialUser } from "@/components/strata-social-user/StrataSocialUser";
 import { searchInputProperties } from "@/utils/input-properties";
 import { StrataModal } from "@/components/strata-modal/StrataModal";
+import { Notifications } from "@/components/features/notifications/Notifications";
+import { screenOptions } from "../_layout";
 
 export default function Profile() {
   const [currentTab, setCurrentTab] = useState("Stats");
@@ -38,6 +40,7 @@ export default function Profile() {
   const [searchedUser, setSearchedUser] = useState<any>(null);
   const [isSearched, setIsSearched] = useState(false);
   const [modalSettingsVisible, setModalSettingsVisible] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
 
   const tabs = ["Stats", "Social", "Shared"];
 
@@ -558,17 +561,43 @@ export default function Profile() {
   };
 
   // #TODO: Go to users profiles
-  // #TODO: Add confirmation alert for unfriending and unfollowing
 
-  return (
+  return notificationVisible ? (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: notificationVisible
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
+      <Notifications
+        pending={{ friends: user.pending_friends, trips: user.pending_trips }}
+        setVisible={setNotificationVisible}
+      />
+    </>
+  ) : (
     <View style={styles.page}>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: notificationVisible
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
       <StrataHeader
         classname={[styles.header]}
         icons={[
           {
             icon: <BellIcon color={Colors.primaryDark} />,
             classname: styles.icon,
-            onPress: () => {}, // #TODO: add notification functionality
+            hasNotification:
+              user.pending_friends.length > 0 || user.pending_trips.length > 0,
+            onPress: () => {
+              setNotificationVisible(true);
+            },
           },
           {
             icon: <SettingsIcon color={Colors.primaryDark} />,
