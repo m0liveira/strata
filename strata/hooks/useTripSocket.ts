@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
-import { user } from "@/utils/userService";
 
 const SOCKET_URL = process.env.EXPO_PUBLIC_WSAPI_URL;
 
 export function useTripSocket(
     tripId?: string,
+    userToken?: string,
     onSyncNeeded?: () => void,
     onNewMessage?: (msg: any) => void
 ) {
@@ -14,10 +14,13 @@ export function useTripSocket(
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        if (!tripId) return;
+        if (!tripId || !userToken) return;
 
         socketRef.current = io(SOCKET_URL, {
             transports: ["websocket"],
+            auth: {
+                token: userToken,
+            }
         });
 
         const socket = socketRef.current;
@@ -49,9 +52,13 @@ export function useTripSocket(
 
     const sendMessage = useCallback((text: string) => {
         if (socketRef.current && text.trim() !== "") {
-            socketRef.current.emit("message", { tripId, message: text });
+            socketRef.current.emit("sendMessage", { tripId, message: text });
         }
     }, [tripId]);
 
-    return { isConnected, messages, sendMessage, setMessages };
+    const clearMessages = useCallback(() => {
+        setMessages([]);
+    }, []);
+
+    return { isConnected, messages, sendMessage, setMessages, clearMessages };
 }

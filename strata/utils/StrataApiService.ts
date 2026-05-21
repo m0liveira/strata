@@ -511,6 +511,27 @@ export const deleteImageFromSupabase = async (imageUri: string, bucket: string) 
     }
 };
 
+export const getChatMessages = async (tripId: string) => {
+    try {
+        const response = await fetch(`${API_URL}/chat/${tripId}/messages`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to get trip messages");
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+};
+
 /**  @param lastPulledAt Last pull timestamp (0 to get everything). */
 export const pullChanges = async (lastPulledAt: number = 0) => {
     try {
