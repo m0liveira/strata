@@ -43,6 +43,7 @@ import { user } from "@/utils/userService";
 import { floatInputProperties } from "@/utils/input-properties";
 import { useTripSocket } from "@/hooks/useTripSocket";
 import { Chat } from "@/components/features/chat/Chat";
+import { openMapRoute } from "@/utils/generalFunctions";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -110,13 +111,20 @@ export default function Trip() {
       setTabs(["Map", "Itinerary"]);
       setCurrentTab("Itinerary");
     }
-
-    setChatMessages(await getChatMessages(trip_id));
   }, [origin, trip_id]);
+
+  const fetchMessages = useCallback(async () => {
+    const messages = await getChatMessages(trip_id);
+    setChatMessages(messages);
+  }, [trip_id]);
 
   useEffect(() => {
     fetchTrip();
-  }, [fetchTrip, isUpdated, chatMessages]);
+  }, [fetchTrip, isUpdated]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   const isGroupTrip = trip?.members && trip.members.length > 1;
 
@@ -125,6 +133,9 @@ export default function Trip() {
     user.access_token,
     () => {
       fetchTrip();
+    },
+    () => {
+      fetchMessages();
     },
   );
 
@@ -742,9 +753,21 @@ export default function Trip() {
   };
 
   function renderTabContent() {
-    // #TODO: Add real map and itinerary content here. For now, just placeholders.
     if (currentTab === "Map") {
-      return <Text>Hello World</Text>;
+      return (
+        <View style={styles.mapContainer}>
+          <Text style={styles.mapsText}>
+            View your complete trip itinerary directly on your native maps app.
+          </Text>
+
+          <Pressable
+            style={styles.mapsButton}
+            onPress={() => openMapRoute(trip?.locations || [])}
+          >
+            <Text style={styles.ctaText}>Open Route in Maps</Text>
+          </Pressable>
+        </View>
+      );
     }
 
     const locations = trip?.locations || [];

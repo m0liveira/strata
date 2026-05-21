@@ -45,6 +45,7 @@ import {
   getDayLabel,
   getMidnight,
   getTimeUntil,
+  openMapRoute,
 } from "@/utils/generalFunctions";
 import { StrataSchedule } from "@/components/strata-schedule/StrataSchedule";
 import { BudgetScreen } from "@/components/screens/budget-screen/BudgetScreen";
@@ -387,9 +388,21 @@ export default function MyTrips() {
       );
     }
 
-    // #TODO: Add real map and itinerary content here. For now, just placeholders.
     if (currentTab === "Map") {
-      return <Text>Hello World</Text>;
+      return (
+        <View style={styles.mapContainer}>
+          <Text style={styles.mapsText}>
+            View your complete trip itinerary directly on your native maps app.
+          </Text>
+
+          <Pressable
+            style={styles.mapsButton}
+            onPress={() => openMapRoute(trip?.locations || [])}
+          >
+            <Text style={styles.ctaText}>Open Route in Maps</Text>
+          </Pressable>
+        </View>
+      );
     }
 
     if (currentTab === "Budget") {

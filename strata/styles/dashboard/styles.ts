@@ -70,10 +70,6 @@ export const styles = StyleSheet.create({
         ...Typography.labelM,
         color: Colors.grey600,
     },
-    ctaText: {
-        ...Typography.cta,
-        color: Colors.white,
-    },
     ctaDisabled: {
         backgroundColor: Colors.grey100,
         borderColor: Colors.grey200
@@ -162,5 +158,5 @@ export const styles = StyleSheet.create({
     options: {
         ...Typography.bodyM,
         color: Colors.grey400,
-    }
+    },
 });
