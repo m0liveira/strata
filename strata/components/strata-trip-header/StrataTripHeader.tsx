@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import { Pressable, StyleProp, Text, ViewStyle, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,7 +19,9 @@ type TripHeaderProps = {
   origin?: string;
   creator?: string;
   members: any[];
+  hasNotification?: boolean;
   onPress?: () => void;
+  onChatPress?: () => void;
 };
 
 export function TripHeader(props: TripHeaderProps) {
@@ -95,7 +97,9 @@ export function TripHeader(props: TripHeaderProps) {
               </View>
             ) : (
               <Text style={[styles.date, isCurrent && styles.current]}>
-                {new Date(props.trip.start_date).toLocaleDateString("pt-PT")}
+                {props.trip.start_date
+                  ? new Date(props.trip.start_date).toLocaleDateString("pt-PT")
+                  : "TBD"}
               </Text>
             )}
 
@@ -103,8 +107,9 @@ export function TripHeader(props: TripHeaderProps) {
           </View>
 
           {props.members?.length > 1 && (
-            <Pressable style={styles.icon} onPress={() => {}}>
+            <Pressable style={styles.icon} onPress={props.onChatPress}>
               <ChatBubbleIcon color={Colors.white} classname={styles.icon} />
+              {props.hasNotification && <View style={styles.notificationDot} />}
             </Pressable>
           )}
 

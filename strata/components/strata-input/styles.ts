@@ -22,7 +22,7 @@ export const styles = StyleSheet.create({
         top: 0,
         bottom: 0,
         marginVertical: 'auto',
-        right: '7%',
+        right: 12,
         aspectRatio: 1,
         width: '9%',
     }

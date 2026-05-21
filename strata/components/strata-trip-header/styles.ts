@@ -104,5 +104,14 @@ export const styles = StyleSheet.create({
         borderRadius: BorderRadius.full,
         borderWidth: 2,
         borderColor: Colors.white40
+    },
+    notificationDot: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        width: 8,
+        height: 8,
+        backgroundColor: 'red',
+        borderRadius: BorderRadius.full,
     }
 });

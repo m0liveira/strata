@@ -10,6 +10,7 @@ import { styles } from "@/styles/trip/styles";
 import { TripHeader } from "@/components/strata-trip-header/StrataTripHeader";
 import {
   deleteImageFromSupabase,
+  getChatMessages,
   getSharedTripByID,
   getTripByID,
   LeaveTrip,
@@ -41,6 +42,7 @@ import {
 import { user } from "@/utils/userService";
 import { floatInputProperties } from "@/utils/input-properties";
 import { useTripSocket } from "@/hooks/useTripSocket";
+import { Chat } from "@/components/features/chat/Chat";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -59,6 +61,8 @@ export default function Trip() {
   const [isSettingBudget, setIsSettingBudget] = useState(false);
   const [budget, setBudget] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [chatVisible, setChatVisible] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any>([]);
 
   const { trip_id, origin, creator } = useLocalSearchParams() as {
     trip_id: string;
@@ -106,16 +110,19 @@ export default function Trip() {
       setTabs(["Map", "Itinerary"]);
       setCurrentTab("Itinerary");
     }
+
+    setChatMessages(await getChatMessages(trip_id));
   }, [origin, trip_id]);
 
   useEffect(() => {
     fetchTrip();
-  }, [fetchTrip, isUpdated]);
+  }, [fetchTrip, isUpdated, chatMessages]);
 
   const isGroupTrip = trip?.members && trip.members.length > 1;
 
-  const { isConnected, messages, sendMessage } = useTripSocket(
+  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
     isGroupTrip ? trip?.trip_id : undefined,
+    user.access_token,
     () => {
       fetchTrip();
     },
@@ -137,6 +144,7 @@ export default function Trip() {
         setIsSettingBudget(false);
         setBudget("");
         setSelectedLocation(null);
+        setChatVisible(false);
       };
     }, []),
   );
@@ -827,7 +835,24 @@ export default function Trip() {
     return null;
   }
 
-  return !isCreating && !isUpdating ? (
+  return chatVisible ? (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      <Chat
+        setVisible={setChatVisible}
+        trip={trip}
+        handleMessage={sendMessage}
+        messages={chatMessages}
+        setMessages={setChatMessages}
+        resetMessages={clearMessages}
+      />
+    </>
+  ) : !isCreating && !isUpdating ? (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
@@ -843,7 +868,9 @@ export default function Trip() {
           origin={origin}
           creator={creator}
           members={trip.members}
+          hasNotification={messages.length > 0}
           onPress={() => setModalSettingsVisible(true)}
+          onChatPress={() => setChatVisible(true)}
         />
       )}
 

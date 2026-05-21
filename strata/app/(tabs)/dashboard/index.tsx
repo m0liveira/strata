@@ -32,6 +32,7 @@ import {
   inviteToTrip,
   getTripByID,
   ExportTrip,
+  getChatMessages,
 } from "@/utils/StrataApiService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
 import { StrataTripOverviewCard } from "@/components/strata-trip-overview-card/StrataTripOverviewCard";
@@ -49,6 +50,7 @@ import { StrataSchedule } from "@/components/strata-schedule/StrataSchedule";
 import { BudgetScreen } from "@/components/screens/budget-screen/BudgetScreen";
 import { useTripSocket } from "@/hooks/useTripSocket";
 import { Notifications } from "@/components/features/notifications/Notifications";
+import { Chat } from "@/components/features/chat/Chat";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -66,6 +68,9 @@ export default function MyTrips() {
   const [selectedSpot, setSelectedSpot] = useState<any>({});
   const [isOpened, setIsOpened] = useState(false);
   const [notificationVisible, setNotificationVisible] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any>([]);
+  let loaded = false;
 
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
@@ -80,28 +85,39 @@ export default function MyTrips() {
     }
   };
 
-  useEffect(() => {
-    const loadProfiles = async () => {
-      if (
-        (!user.friends_profiles || user.friends_profiles.length === 0) &&
-        user.friends?.length > 0
-      ) {
-        try {
-          const profiles = await getUsersData(user.friends);
-          user.friends_profiles = profiles;
+  const loadProfiles = async () => {
+    if (
+      (!user.friends_profiles || user.friends_profiles.length === 0) &&
+      user.friends?.length > 0
+    ) {
+      try {
+        const profiles = await getUsersData(user.friends);
+        user.friends_profiles = profiles;
 
-          setFriends(profiles);
-        } catch (error) {
-          console.error("Error:", error);
-        }
+        setFriends(profiles);
+        loaded = true;
+      } catch (error) {
+        console.error("Error:", error);
       }
-    };
+    }
+  };
 
-    loadProfiles();
-  }, []);
+  const getMessages = async () => {
+    setChatMessages(await getChatMessages(trip.trip_id));
+  };
+
+  useEffect(() => {
+    if (!trip) return;
+
+    if (!loaded) {
+      loadProfiles();
+    }
+
+    getMessages();
+  }, [chatMessages, trip]);
 
   useFocusEffect(
-    useCallback(() => {      
+    useCallback(() => {
       let selectedTrip = null;
 
       if (user.trips?.length > 0) {
@@ -146,15 +162,17 @@ export default function MyTrips() {
         setSelectedSpot({});
         setIsOpened(false);
         setNotificationVisible(false);
+        setChatVisible(false);
       };
     }, []),
   );
 
   const isGroupTrip = trip?.members && trip.members.length > 1;
 
-  const { isConnected, messages, sendMessage } = useTripSocket(
+  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
     isGroupTrip ? trip?.trip_id : undefined,
-    () => {
+    user.access_token,
+    async () => {
       fetchTrip(trip?.trip_id);
     },
   );
@@ -809,6 +827,23 @@ export default function MyTrips() {
         setVisible={setNotificationVisible}
       />
     </>
+  ) : chatVisible ? (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: { display: "none" },
+        }}
+      />
+
+      <Chat
+        setVisible={setChatVisible}
+        trip={trip}
+        handleMessage={sendMessage}
+        messages={chatMessages}
+        setMessages={setChatMessages}
+        resetMessages={clearMessages}
+      />
+    </>
   ) : (
     <View style={styles.page}>
       <Tabs.Screen
@@ -853,8 +888,10 @@ export default function MyTrips() {
                 {
                   icon: <ChatBubbleIcon color={Colors.primaryDark} />,
                   classname: styles.icon,
-                  onPress: () => {},
-                  // #TODO: Add chat functionality
+                  hasNotification: messages.length > 0,
+                  onPress: () => {
+                    setChatVisible(true);
+                  },
                 },
               ]
             : []),
