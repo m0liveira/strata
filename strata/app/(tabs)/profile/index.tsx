@@ -296,7 +296,7 @@ export default function Profile() {
               text: `${getDaysAbroad()}`,
             })}
 
-            <View style={[styles.card, { width: "100%" }]}>
+            <View style={[styles.card, { width: "100%", flex: 0 }]}>
               <Image
                 source={require("@/assets/images/friends.png")}
                 style={styles.image}
@@ -308,12 +308,12 @@ export default function Profile() {
                 {getTravelBuddies().length === 0 ? (
                   <Text style={styles.text}>You are a solo traveler!</Text>
                 ) : (
-                  <>
+                  <View style={{ flexDirection: "row", alignItems: 'center' }}>
                     <Image
                       source={setUserImageSource(getTravelBuddies()[0].photo)}
                       style={[
                         styles.avatar,
-                        { width: 24, height: 24, marginRight: 10 },
+                        { width: 20, height: 20, marginRight: 10 },
                       ]}
                       resizeMode="contain"
                     />
@@ -321,7 +321,7 @@ export default function Profile() {
                     <Text style={styles.text}>
                       {getTravelBuddies()[0].username}
                     </Text>
-                  </>
+                  </View>
                 )}
               </View>
 

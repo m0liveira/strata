@@ -28,13 +28,13 @@ export const styles = StyleSheet.create({
     },
     icon: {
         aspectRatio: 1,
-        width: '8%',
+        width: 24,
     },
     bgIcon: {
         backgroundColor: Colors.grey200,
         borderRadius: BorderRadius.full,
         aspectRatio: 1,
-        width: '12%',
+        width: 36,
     },
     createTripButton: {
         marginBottom: 75,

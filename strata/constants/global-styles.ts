@@ -149,8 +149,8 @@ export const CommonStyles = StyleSheet.create({
   },
   glow: {
     position: "absolute",
-    top: '15%',
-    left: '20%',
+    top: 35,
+    left: 60,
     zIndex: 0,
     filter: 'blur(25px)',
   },

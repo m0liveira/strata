@@ -13,7 +13,11 @@ import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { ArrowIcon, PinIcon } from "@/components/icons";
 import { Trip } from "@/types/models/trip-model";
-import { getDayLabel, getMidnight, getTimeUntil } from "@/utils/generalFunctions";
+import {
+  getDayLabel,
+  getMidnight,
+  getTimeUntil,
+} from "@/utils/generalFunctions";
 
 type TripOverviewCardProps = {
   classname?: StyleProp<ViewStyle>;
@@ -26,9 +30,14 @@ const getLocationDate = (loc: any, tripStartDate: string) => {
   if (loc.scheduled_time && loc.scheduled_time.includes("T")) {
     return new Date(loc.scheduled_time);
   }
-  const baseDate = new Date(tripStartDate);
-  baseDate.setDate(baseDate.getDate() + ((loc.day || 1) - 1));
-  return baseDate;
+
+  if (tripStartDate) {
+    const baseDate = new Date(tripStartDate);
+    baseDate.setDate(baseDate.getDate() + ((loc.day || 1) - 1));
+    return baseDate;
+  }
+
+  return new Date();
 };
 
 export function StrataTripOverviewCard({
@@ -52,21 +61,29 @@ export function StrataTripOverviewCard({
   const upcomingLocations = (locations || [])
     .map((loc) => ({
       ...loc,
-      parsedDate: getLocationDate(loc, trip.start_date),
+      parsedDate: getLocationDate(loc, trip?.start_date),
     }))
     .filter((loc) => {
+      if (!loc.parsedDate || isNaN(loc.parsedDate.getTime())) {
+        return true;
+      }
+
       if (loc.scheduled_time) {
         return loc.parsedDate.getTime() >= now;
       }
+
       const endOfDay = new Date(loc.parsedDate);
       endOfDay.setHours(23, 59, 59, 999);
       return endOfDay.getTime() >= now;
     })
     .sort((a, b) => {
       if (a.day !== b.day) return (a.day || 1) - (b.day || 1);
+
       if (!a.scheduled_time && !b.scheduled_time) return 0;
+
       if (!a.scheduled_time) return 1;
       if (!b.scheduled_time) return -1;
+
       return a.parsedDate.getTime() - b.parsedDate.getTime();
     });
 
@@ -87,11 +104,8 @@ export function StrataTripOverviewCard({
       );
     }
 
-    const locationsToRender = upcomingLocations.slice(
-      0,
-      isExpanded ? 10 : 3,
-    );
-
+    const locationsToRender = upcomingLocations.slice(0, isExpanded ? 10 : 3);
+    
     return (
       <>
         {locationsToRender.map((loc) => (

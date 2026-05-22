@@ -76,7 +76,8 @@ export const styles = StyleSheet.create({
         borderRadius: BorderRadius.md,
         borderColor: Colors.grey200,
         borderWidth: 1,
-        width: 151,
+        minWidth: '48%',
+        flex: 1,
         height: 80,
         padding: 12
     },

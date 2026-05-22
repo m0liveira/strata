@@ -66,7 +66,7 @@ export const styles = StyleSheet.create({
         backgroundColor: Colors.white70,
         borderRadius: BorderRadius.full,
         aspectRatio: 1,
-        width: '12%',
+        width: 32,
         transform: [{ rotate: '180deg' }],
     },
     infoContainer: {
