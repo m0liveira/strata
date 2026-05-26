@@ -114,7 +114,8 @@ export function StrataTripOverviewCard({
               <Text style={styles.label}>
                 {getDayLabel(loc.parsedDate, todayMidnight)}
               </Text>
-              <Text style={styles.text}>{loc.name}</Text>
+
+              <Text numberOfLines={1} style={styles.text}>{loc.name}</Text>
             </View>
 
             <View style={styles.right}>

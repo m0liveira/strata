@@ -1043,7 +1043,7 @@ export default function Trip() {
                       : setisCreating(true)
                   }
                 >
-                  <Text style={styles.optionsText}>
+                  <Text style={styles.optionsText} numberOfLines={1}>
                     {!selectedLocation
                       ? `Edit "${trip?.name || "Trip"}"`
                       : `Edit "${selectedLocation.name}"`}
@@ -1054,7 +1054,7 @@ export default function Trip() {
                   style={styles.dangerAction}
                   onPress={confirmDangerAction}
                 >
-                  <Text style={styles.dangerText}>
+                  <Text style={styles.dangerText} numberOfLines={1}>
                     {!selectedLocation
                       ? isOneMemberOnly
                         ? `Delete "${trip?.name || "Trip"}"`

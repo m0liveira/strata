@@ -5,7 +5,6 @@ import {
   View,
   StyleProp,
   ViewStyle,
-  Linking,
   Platform,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";

@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
         borderRadius: BorderRadius.sm,
         boxShadow: '0 0 4px rgba(0, 0, 0, 0.1)',
         width: '100%',
-        height: 64,
+        minHeight: 64,
         gap: 24,
         padding: 12,
     },

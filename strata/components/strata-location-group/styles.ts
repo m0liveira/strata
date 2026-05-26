@@ -7,6 +7,7 @@ export const styles = StyleSheet.create({
         flexGrow: 1,
         width: "100%",
         paddingHorizontal: 40,
+        marginBottom: 90,
     },
     scrollContent: {
         flexDirection: "row",
@@ -20,6 +21,7 @@ export const styles = StyleSheet.create({
         gap: 12,
         height: '100%',
         width: 24,
+        paddingBottom: 150
     },
     icon: {
         aspectRatio: 1,
@@ -39,5 +41,6 @@ export const styles = StyleSheet.create({
         gap: 24,
         flex: 1,
         paddingTop: 5,
+        marginBottom: 150
     },
 });
