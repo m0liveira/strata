@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { router, useFocusEffect, Tabs } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { styles } from "@/styles/dashboard/styles";
@@ -52,70 +52,64 @@ import { BudgetScreen } from "@/components/screens/budget-screen/BudgetScreen";
 import { useTripSocket } from "@/hooks/useTripSocket";
 import { Notifications } from "@/components/features/notifications/Notifications";
 import { Chat } from "@/components/features/chat/Chat";
+import { generateTrip } from "@/utils/aiService";
+import { StrataGenerativePage } from "@/components/strata-generative-page/StrataGenerativePage";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isManual, setisManual] = useState(true);
   const [creationStage, setCreationStage] = useState(0);
   const [currentTab, setCurrentTab] = useState("Overview");
   const [trip, setTrip] = useState<any>(null);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [currentAction, setCurrentAction] = useState("");
   const [friends, setFriends] = useState<PublicUser[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
   const [selectedMethod, setSelectedMethod] = useState("Shift All");
   const [hour, setHour] = useState("00");
   const [minute, setMinute] = useState("30");
   const [selectedSpot, setSelectedSpot] = useState<any>({});
   const [isOpened, setIsOpened] = useState(false);
+
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
   const [chatMessages, setChatMessages] = useState<any>([]);
-  let loaded = false;
 
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const todayMidnight = getMidnight();
 
-  const fetchTrip = async (tripId: string) => {
-    try {
-      const tripData = await getTripByID(tripId);
-      setTrip(tripData);
-    } catch (error) {
-      console.error("Error fetching trip:", error);
-    }
-  };
-
-  const loadProfiles = async () => {
-    if (
-      (!user.friends_profiles || user.friends_profiles.length === 0) &&
-      user.friends?.length > 0
-    ) {
-      try {
-        const profiles = await getUsersData(user.friends);
-        user.friends_profiles = profiles;
-
-        setFriends(profiles);
-        loaded = true;
-      } catch (error) {
-        console.error("Error:", error);
+  // 2. Efeitos
+  // Carrega os perfis de amigos apenas uma vez na montagem
+  useEffect(() => {
+    const loadProfiles = async () => {
+      if (
+        (!user.friends_profiles || user.friends_profiles.length === 0) &&
+        user.friends?.length > 0
+      ) {
+        try {
+          const profiles = await getUsersData(user.friends);
+          user.friends_profiles = profiles;
+          setFriends(profiles);
+        } catch (error) {
+          console.error("Error loading profiles:", error);
+        }
+      } else {
+        setFriends(user.friends_profiles || []);
       }
-    }
-  };
-
-  const getMessages = async () => {
-    setChatMessages(await getChatMessages(trip.trip_id));
-  };
+    };
+    loadProfiles();
+  }, []);
 
   useEffect(() => {
-    if (!trip) return;
-
-    if (!loaded) {
-      loadProfiles();
+    if (trip?.trip_id) {
+      getChatMessages(trip.trip_id).then(setChatMessages);
     }
-
-    getMessages();
-  }, [chatMessages, trip]);
+  }, [trip?.trip_id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -124,7 +118,6 @@ export default function MyTrips() {
       if (user.trips?.length > 0) {
         const upcomingTrips = user.trips.filter((t) => {
           if (!t.start_date) return false;
-
           const referenceDate = t.end_date
             ? new Date(t.end_date)
             : new Date(t.start_date);
@@ -132,12 +125,11 @@ export default function MyTrips() {
         });
 
         if (upcomingTrips.length > 0) {
-          selectedTrip = upcomingTrips.sort((a, b) => {
-            return (
+          selectedTrip = upcomingTrips.sort(
+            (a, b) =>
               new Date(a.start_date).getTime() -
-              new Date(b.start_date).getTime()
-            );
-          })[0];
+              new Date(b.start_date).getTime(),
+          )[0];
         } else {
           const tripsWithoutDates = user.trips.filter((t) => !t.start_date);
           selectedTrip =
@@ -147,11 +139,11 @@ export default function MyTrips() {
 
       setTrip(selectedTrip);
 
-      if (selectedTrip && selectedTrip.trip_id) {
-        fetchTrip(selectedTrip.trip_id);
+      if (selectedTrip?.trip_id) {
+        getTripByID(selectedTrip.trip_id).then(setTrip).catch(console.error);
       }
 
-      return async () => {
+      return () => {
         setisCreating(false);
         setisManual(true);
         setCreationStage(0);
@@ -164,6 +156,7 @@ export default function MyTrips() {
         setIsOpened(false);
         setNotificationVisible(false);
         setChatVisible(false);
+        setIsGenerating(false);
       };
     }, []),
   );
@@ -174,28 +167,94 @@ export default function MyTrips() {
     isGroupTrip ? trip?.trip_id : undefined,
     user.access_token,
     async () => {
-      fetchTrip(trip?.trip_id);
+      if (trip?.trip_id) {
+        const tripData = await getTripByID(trip.trip_id);
+        setTrip(tripData);
+      }
+    },
+    (newMessage: any) => {
+      setChatMessages((prevMessages: any[]) => {
+        const exists = prevMessages.some(
+          (msg) => msg.message_id === newMessage.message_id,
+        );
+        if (exists) return prevMessages;
+
+        return [...prevMessages, newMessage];
+      });
     },
   );
 
-  function advanceToForm(bool: boolean) {
-    setisManual(bool);
-    setCreationStage(1);
-  }
+  const scheduledLocations = useMemo(() => {
+    return trip?.locations?.filter((loc: any) => loc.scheduled_time) || [];
+  }, [trip?.locations]);
 
-  const handleCreateTrip = async (data: any) => {
+  const activeSpotInfo = useMemo(() => {
+    if (scheduledLocations.length === 0) return null;
+
+    const now = Date.now();
+    const locationsWithDates = scheduledLocations.map((loc: any) => ({
+      ...loc,
+      parsedDate: new Date(
+        loc.scheduled_time.endsWith("Z")
+          ? loc.scheduled_time
+          : `${loc.scheduled_time}Z`,
+      ),
+    }));
+
+    const closest =
+      locationsWithDates
+        .sort(
+          (a: any, b: any) => a.parsedDate.getTime() - b.parsedDate.getTime(),
+        )
+        .find((loc: any) => loc.parsedDate.getTime() >= now) ||
+      locationsWithDates[0];
+
+    const active =
+      selectedMethod !== "Shift All" && selectedSpot?.name
+        ? {
+            ...selectedSpot,
+            parsedDate: new Date(
+              selectedSpot.scheduled_time.endsWith("Z")
+                ? selectedSpot.scheduled_time
+                : `${selectedSpot.scheduled_time}Z`,
+            ),
+          }
+        : closest;
+
+    const shiftOffset =
+      Number(hour) * 60 * 60 * 1000 + Number(minute) * 60 * 1000;
+    const shiftedDate = new Date(active.parsedDate.getTime() + shiftOffset);
+
+    return { locationsWithDates, closest, active, shiftedDate, shiftOffset };
+  }, [scheduledLocations, selectedMethod, selectedSpot, hour, minute]);
+
+  const processTrip = async (data: any, isAI: boolean) => {
     let finalBannerUrl = data.banner;
     let imageWasUploaded = false;
 
     try {
-      if (data.banner && data.banner.startsWith("file://")) {
-        finalBannerUrl = await uploadImageToSupabase(data.banner, "banners");
-        imageWasUploaded = true;
+      const newTripId = Crypto.randomUUID();
+
+      const uploadTask = async () => {
+        if (data.banner && data.banner.startsWith("file://")) {
+          finalBannerUrl = await uploadImageToSupabase(data.banner, "banners");
+          imageWasUploaded = true;
+        }
+      };
+
+      let aiResult = null;
+
+      if (isAI) {
+        const [_, aiRes] = await Promise.all([
+          uploadTask(),
+          generateTrip(data),
+        ]);
+        aiResult = aiRes;
+      } else {
+        await uploadTask();
       }
 
       const { destinations, selectedUsers, banner, ...tripCoreData } = data;
-
-      const newTripId = Crypto.randomUUID();
 
       const createdDestinations = destinations.map((destination: string) => ({
         destination_id: Crypto.randomUUID(),
@@ -203,7 +262,25 @@ export default function MyTrips() {
         destination,
       }));
 
-      const formattedTripData = {
+      const createdLocations =
+        aiResult?.locations?.map((loc: any) => {
+          let safeDate = loc.scheduled_time;
+          if (safeDate && !safeDate.includes("T")) {
+            safeDate = new Date(safeDate.replace(" ", "T")).toISOString();
+          } else if (safeDate) {
+            safeDate = new Date(safeDate).toISOString();
+          }
+          return {
+            ...loc,
+            location_id: Crypto.randomUUID(),
+            trip_id: newTripId,
+            scheduled_time: safeDate || null,
+          };
+        }) || [];
+
+      const formattedNewTrip = {
+        trip_id: newTripId,
+        banner: finalBannerUrl,
         ...tripCoreData,
         start_date: tripCoreData.start_date
           ? new Date(tripCoreData.start_date).toISOString()
@@ -215,13 +292,7 @@ export default function MyTrips() {
 
       const myChanges = {
         trips: {
-          created: [
-            {
-              trip_id: newTripId,
-              banner: finalBannerUrl,
-              ...formattedTripData,
-            },
-          ],
+          created: [formattedNewTrip],
           updated: [],
           deleted: [],
         },
@@ -230,27 +301,37 @@ export default function MyTrips() {
           updated: [],
           deleted: [],
         },
+        locations: {
+          created: createdLocations,
+          updated: [],
+          deleted: [],
+        },
       };
 
       await pushChanges(myChanges);
 
-      for (const user of selectedUsers) {
-        await inviteToTrip(newTripId, user);
+      if (selectedUsers?.length > 0) {
+        await Promise.all(
+          selectedUsers.map((u: any) => inviteToTrip(newTripId, u)),
+        );
       }
 
-      user.trips.push(myChanges.trips.created[0]);
+      user.trips.push(formattedNewTrip);
+
+      setTrip({
+        ...formattedNewTrip,
+        destinations: createdDestinations,
+        locations: createdLocations,
+        members: [user],
+      });
     } catch (error) {
       console.error(error);
       alert("Error creating trip. Please try again.");
-
       if (imageWasUploaded && finalBannerUrl) {
         try {
           await deleteImageFromSupabase(finalBannerUrl, "banners");
         } catch (cleanupError) {
-          console.error(
-            "Error during cleanup of uploaded image after failed trip creation:",
-            cleanupError,
-          );
+          console.error("Error during cleanup:", cleanupError);
         }
       }
     }
@@ -259,34 +340,80 @@ export default function MyTrips() {
   async function handleSubmit(data: any) {
     if (creationStage !== 3) {
       setCreationStage(creationStage + 1);
-    } else {
-      // #TODO: Save trip locally first...
-
-      await handleCreateTrip(data);
-
-      setisCreating(false);
-      setisManual(true);
-      setCreationStage(0);
+      return;
     }
+
+    if (!isManual) setIsGenerating(true);
+
+    await processTrip(data, !isManual);
+
+    setisCreating(false);
+    setisManual(true);
+    setCreationStage(0);
+    setIsGenerating(false);
   }
 
-  // #TODO: Put this repetetive functions from my-trips page in a utils file and call them here
+  const handleShiftSubmit = async () => {
+    if (!activeSpotInfo) return;
 
-  function renderCreationStage() {
-    switch (creationStage) {
-      case 0:
-        return (
-          <TripCreationOptions
-            manualOnPress={() => advanceToForm(true)}
-            generateOnPress={() => advanceToForm(false)}
-          />
+    const { active, shiftOffset } = activeSpotInfo;
+    const targetDay = active.day || 1;
+    const thresholdTime = active.parsedDate.getTime();
+
+    const updatedLocations = trip.locations
+      .filter((loc: any) => {
+        if (!loc.scheduled_time || loc.day !== targetDay) return false;
+        if (selectedMethod === "Shift From") {
+          const locTimeStr = loc.scheduled_time.endsWith("Z")
+            ? loc.scheduled_time
+            : `${loc.scheduled_time}Z`;
+          return new Date(locTimeStr).getTime() >= thresholdTime;
+        }
+        return true;
+      })
+      .map((loc: any) => {
+        const locTimeStr = loc.scheduled_time.endsWith("Z")
+          ? loc.scheduled_time
+          : `${loc.scheduled_time}Z`;
+        const originalDate = new Date(locTimeStr);
+        const newDate = new Date(originalDate.getTime() + shiftOffset);
+
+        const originalMidnight = new Date(originalDate).setUTCHours(0, 0, 0, 0);
+        const newMidnight = new Date(newDate).setUTCHours(0, 0, 0, 0);
+        const diffDays = Math.round(
+          (newMidnight - originalMidnight) / (1000 * 60 * 60 * 24),
         );
-      default:
-        return (
-          <TripCreationForm stage={creationStage} handleSubmit={handleSubmit} />
-        );
+
+        const { deleted_at, ...cleanLoc } = loc;
+        return {
+          ...cleanLoc,
+          scheduled_time: newDate.toISOString(),
+          day: (cleanLoc.day || 1) + diffDays,
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+    try {
+      await pushChanges({
+        locations: { created: [], updated: updatedLocations, deleted: [] },
+      });
+      setModalVisible(false);
+      setSelectedSpot({});
+      setIsOpened(false);
+      // #TODO: Update locations time in the overview screen
+    } catch (error) {
+      console.error("Error while shifting schedule:", error);
     }
-  }
+  };
+
+  const toggleUser = (userId: number) => {
+    const idStr = String(userId);
+    setSelectedUsers((prev) =>
+      prev.includes(idStr)
+        ? prev.filter((id) => id !== idStr)
+        : [...prev, idStr],
+    );
+  };
 
   const quickActions = [
     {
@@ -332,69 +459,50 @@ export default function MyTrips() {
     },
   ];
 
-  const toggleUser = (userId: number) => {
-    const idStr = String(userId);
-    setSelectedUsers((prev) =>
-      prev.includes(idStr)
-        ? prev.filter((id) => id !== idStr)
-        : [...prev, idStr],
-    );
-  };
-
   function renderTabContent() {
     if (currentTab === "Overview") {
       return (
         <>
           <View style={styles.quickActions}>
-            {quickActions.map((quickAction) => {
-              return (
-                <View
-                  key={quickAction.title}
-                  style={{ alignItems: "center", gap: 8 }}
+            {quickActions.map((quickAction) => (
+              <View
+                key={quickAction.title}
+                style={{ alignItems: "center", gap: 8 }}
+              >
+                <Pressable
+                  style={[styles.quickAction, quickAction.classname]}
+                  onPress={quickAction.onPress}
                 >
-                  <Pressable
-                    style={[styles.quickAction, quickAction.classname]}
-                    onPress={quickAction.onPress}
-                  >
-                    {quickAction.icon}
-                  </Pressable>
-
-                  <Text style={styles.qAText}>{quickAction.title}</Text>
-                </View>
-              );
-            })}
+                  {quickAction.icon}
+                </Pressable>
+                <Text style={styles.qAText}>{quickAction.title}</Text>
+              </View>
+            ))}
           </View>
-
           <StrataTripOverviewCard
             trip={trip}
             locations={trip?.locations || []}
             onPress={() =>
               router.push({
                 pathname: "/trip/[trip_id]",
-                params: {
-                  trip_id: trip.trip_id,
-                  origin: "dashboard",
-                },
+                params: { trip_id: trip.trip_id, origin: "dashboard" },
               })
             }
           />
-
           <StrataDocumentsCard
             locations={trip?.locations || []}
-            tripStartDate={trip.start_date}
+            tripStartDate={trip?.start_date}
             classname={{ marginBottom: 40 }}
           />
         </>
       );
     }
-
     if (currentTab === "Map") {
       return (
         <View style={styles.mapContainer}>
           <Text style={styles.mapsText}>
             View your complete trip itinerary directly on your native maps app.
           </Text>
-
           <Pressable
             style={styles.mapsButton}
             onPress={() => openMapRoute(trip?.locations || [])}
@@ -404,71 +512,38 @@ export default function MyTrips() {
         </View>
       );
     }
-
-    if (currentTab === "Budget") {
+    if (currentTab === "Budget")
       return <BudgetScreen trip={trip} setTrip={setTrip} />;
-    }
 
     return null;
   }
 
   function renderShiftComponent() {
-    if (!trip?.locations || trip.locations.length === 0) {
+    if (!trip?.locations || trip.locations.length === 0)
       return <Text>Add locations to your trip!</Text>;
-    }
+    if (!activeSpotInfo) return <Text>No scheduled locations available.</Text>;
 
-    const scheduledLocations = trip.locations.filter(
-      (loc: any) => loc.scheduled_time,
-    );
-
-    if (scheduledLocations.length === 0) {
-      return <Text>No scheduled locations available.</Text>;
-    }
-
-    const todayMidnight = getMidnight();
-    const now = Date.now();
-
-    const locationsWithDates = scheduledLocations.map((loc: any) => {
-      const parsedDate = new Date(loc.scheduled_time);
-      return { ...loc, parsedDate };
-    });
-
-    const closestLocation =
-      locationsWithDates
-        .sort(
-          (a: any, b: any) => a.parsedDate.getTime() - b.parsedDate.getTime(),
-        )
-        .find((loc: any) => loc.parsedDate.getTime() >= now) ||
-      locationsWithDates[0];
-
-    const activeSpot =
-      selectedMethod !== "Shift All" && selectedSpot?.name
-        ? selectedSpot
-        : closestLocation;
-
-    const shiftOffset =
-      Number(hour) * 60 * 60 * 1000 + Number(minute) * 60 * 1000;
-    const shiftedDate = new Date(activeSpot.parsedDate.getTime() + shiftOffset);
+    const { locationsWithDates, active, shiftedDate } = activeSpotInfo;
 
     return (
       <View style={styles.shiftContainer}>
         <View style={styles.location}>
           <View style={styles.left}>
             <Text style={styles.label}>
-              {getDayLabel(activeSpot.parsedDate, todayMidnight)}
+              {getDayLabel(active.parsedDate, todayMidnight)}
             </Text>
-
             {selectedMethod === "Shift All" ? (
-              <Text style={styles.text}>{activeSpot.name}</Text>
+              <Text numberOfLines={1} style={styles.text}>
+                {active.name}
+              </Text>
             ) : (
               <Pressable
                 style={styles.select}
-                onPress={() => {
-                  setIsOpened(!isOpened);
-                }}
+                onPress={() => setIsOpened(!isOpened)}
               >
-                <Text style={styles.text}>{activeSpot.name}</Text>
-
+                <Text numberOfLines={1} style={styles.text}>
+                  {active.name}
+                </Text>
                 <CarretIcon
                   color={Colors.primaryDark}
                   classname={[
@@ -482,36 +557,31 @@ export default function MyTrips() {
 
           <View style={styles.right}>
             <Text style={styles.label}>
-              {activeSpot.parsedDate.toLocaleTimeString("pt-PT", {
+              {active.parsedDate.toLocaleTimeString("pt-PT", {
                 hour: "2-digit",
                 minute: "2-digit",
                 timeZone: "UTC",
               })}
             </Text>
             <Text style={styles.labelM}>
-              {getTimeUntil(activeSpot.scheduled_time)}
+              {getTimeUntil(active.scheduled_time)}
             </Text>
           </View>
 
           {isOpened && (
             <View style={styles.optionsContainer}>
-              {locationsWithDates.map((loc: any) => {
-                return (
-                  <Pressable
-                    key={loc.location_id}
-                    style={{
-                      width: "100%",
-                      paddingVertical: 4,
-                    }}
-                    onPress={() => {
-                      setSelectedSpot(loc);
-                      setIsOpened(false);
-                    }}
-                  >
-                    <Text style={styles.options}>{loc.name}</Text>
-                  </Pressable>
-                );
-              })}
+              {locationsWithDates.map((loc: any) => (
+                <Pressable
+                  key={loc.location_id}
+                  style={{ width: "100%", paddingVertical: 4 }}
+                  onPress={() => {
+                    setSelectedSpot(loc);
+                    setIsOpened(false);
+                  }}
+                >
+                  <Text style={styles.options}>{loc.name}</Text>
+                </Pressable>
+              ))}
             </View>
           )}
         </View>
@@ -530,9 +600,10 @@ export default function MyTrips() {
             <Text style={styles.label}>
               {getDayLabel(shiftedDate, todayMidnight)}
             </Text>
-            <Text style={styles.text}>{activeSpot.name}</Text>
+            <Text numberOfLines={1} style={styles.text}>
+              {active.name}
+            </Text>
           </View>
-
           <View style={styles.right}>
             <Text style={styles.label}>
               {shiftedDate.toLocaleTimeString("pt-PT", {
@@ -549,9 +620,7 @@ export default function MyTrips() {
 
         <StrataSchedule
           isScheduled={true}
-          onToggleSchedule={() => {
-            return true;
-          }}
+          onToggleSchedule={() => true}
           hideCheckbox={true}
           selectedHour={hour}
           selectedMinute={minute}
@@ -565,118 +634,20 @@ export default function MyTrips() {
     );
   }
 
-  const handleShiftSubmit = async () => {
-    const shiftOffsetMs =
-      Number(hour) * 60 * 60 * 1000 + Number(minute) * 60 * 1000;
-
-    const now = Date.now();
-    const scheduledLocations = trip.locations.filter(
-      (loc: any) => loc.scheduled_time,
-    );
-
-    const closestLocation =
-      scheduledLocations
-        .map((loc: any) => {
-          const timeStr = loc.scheduled_time.endsWith("Z")
-            ? loc.scheduled_time
-            : `${loc.scheduled_time}Z`;
-          return {
-            ...loc,
-            parsedDate: new Date(timeStr),
-          };
-        })
-        .sort(
-          (a: any, b: any) => a.parsedDate.getTime() - b.parsedDate.getTime(),
-        )
-        .find((loc: any) => loc.parsedDate.getTime() >= now) ||
-      scheduledLocations[0];
-
-    const activeSpot =
-      selectedMethod === "Shift From" && selectedSpot?.name
-        ? selectedSpot
-        : closestLocation;
-
-    const targetDay = activeSpot?.day || 1;
-
-    const activeTimeStr = activeSpot.scheduled_time.endsWith("Z")
-      ? activeSpot.scheduled_time
-      : `${activeSpot.scheduled_time}Z`;
-    const thresholdTime = new Date(activeTimeStr).getTime();
-
-    const updatedLocations = trip.locations
-      .filter((loc: any) => {
-        if (!loc.scheduled_time || loc.day !== targetDay) return false;
-
-        if (selectedMethod === "Shift From") {
-          const locTimeStr = loc.scheduled_time.endsWith("Z")
-            ? loc.scheduled_time
-            : `${loc.scheduled_time}Z`;
-          return new Date(locTimeStr).getTime() >= thresholdTime;
-        }
-
-        return true;
-      })
-      .map((loc: any) => {
-        const locTimeStr = loc.scheduled_time.endsWith("Z")
-          ? loc.scheduled_time
-          : `${loc.scheduled_time}Z`;
-        const originalDate = new Date(locTimeStr);
-        const newDate = new Date(originalDate.getTime() + shiftOffsetMs);
-
-        const originalMidnight = new Date(originalDate).setUTCHours(0, 0, 0, 0);
-        const newMidnight = new Date(newDate).setUTCHours(0, 0, 0, 0);
-
-        const diffDays = Math.round(
-          (newMidnight - originalMidnight) / (1000 * 60 * 60 * 24),
-        );
-
-        const { deleted_at, ...cleanLoc } = loc;
-
-        return {
-          ...cleanLoc,
-          scheduled_time: newDate.toISOString(),
-          day: (cleanLoc.day || 1) + diffDays,
-          updated_at: new Date().toISOString(),
-        };
-      });
-
-    try {
-      await pushChanges({
-        locations: {
-          created: [],
-          updated: updatedLocations,
-          deleted: [],
-        },
-      });
-
-      setModalVisible(false);
-      setSelectedSpot({});
-      setIsOpened(false);
-
-      // #TODO: Update locations time in the overview screen
-    } catch (error) {
-      console.error("Error while shifting schedule:", error);
-    }
-  };
-
-  // #TODO: Add Plan B action functionality
   function renderModalContent() {
     switch (currentAction) {
       case "Plan B":
         return <Text>Plan b</Text>;
-
       case "Shift Trip":
-        const shiftButtons = [
-          { title: "Shift All", text: "Delay full schedule" },
-          {
-            title: "Shift From",
-            text: "Delay from specific time from the schedule",
-          },
-        ];
-
         return (
           <>
-            {shiftButtons.map((btn) => (
+            {[
+              { title: "Shift All", text: "Delay full schedule" },
+              {
+                title: "Shift From",
+                text: "Delay from specific time from the schedule",
+              },
+            ].map((btn) => (
               <Pressable
                 key={btn.title}
                 style={[
@@ -695,9 +666,7 @@ export default function MyTrips() {
                 <Text
                   style={[
                     styles.selectableTitle,
-                    selectedMethod === btn.title && {
-                      color: Colors.coral900,
-                    },
+                    selectedMethod === btn.title && { color: Colors.coral900 },
                   ]}
                 >
                   {btn.title}
@@ -705,18 +674,14 @@ export default function MyTrips() {
                 <Text
                   style={[
                     styles.selectableText,
-                    selectedMethod === btn.title && {
-                      color: Colors.coral400,
-                    },
+                    selectedMethod === btn.title && { color: Colors.coral400 },
                   ]}
                 >
                   {btn.text}
                 </Text>
               </Pressable>
             ))}
-
             {renderShiftComponent()}
-
             <StrataCTA
               classname={[styles.button, { marginTop: 48, marginBottom: 0 }]}
               text="Save"
@@ -725,19 +690,18 @@ export default function MyTrips() {
                 <ClockIcon color={Colors.white} classname={styles.smallIcon} />
               }
               isDisabled={false}
-              onPress={async () => handleShiftSubmit()}
+              onPress={handleShiftSubmit}
             />
           </>
         );
-
       case "Invite":
         return (
           <>
             <StrataSocialList
               users={friends}
               selectedIds={selectedUsers}
-              onUserPress={(user) => toggleUser(user.user_id)}
-              renderRightIcon={(user, isSelected) =>
+              onUserPress={(u) => toggleUser(u.user_id)}
+              renderRightIcon={(u, isSelected) =>
                 isSelected ? (
                   <MinusIcon
                     classname={styles.bigIcon}
@@ -751,7 +715,6 @@ export default function MyTrips() {
                 )
               }
             />
-
             <StrataCTA
               classname={[
                 styles.button,
@@ -769,7 +732,6 @@ export default function MyTrips() {
               isDisabled={true}
               onPress={async () => {}}
             />
-
             <StrataCTA
               classname={[
                 styles.button,
@@ -793,78 +755,84 @@ export default function MyTrips() {
               }
               isDisabled={selectedUsers.length === 0}
               onPress={async () => {
-                for (const user of selectedUsers) {
-                  await inviteToTrip(trip.trip_id, Number(user));
-
-                  setSelectedUsers([]);
-                  setModalVisible(false);
-                  // #TODO: Add notification for users added or errors
-                }
+                await Promise.all(
+                  selectedUsers.map((u) =>
+                    inviteToTrip(trip.trip_id, Number(u)),
+                  ),
+                );
+                setSelectedUsers([]);
+                setModalVisible(false);
               }}
             />
           </>
         );
-
       case "Export":
         return (
           <StrataButton
-            title={trip.name}
+            title={trip?.name || "Trip"}
             text="Export full trip!"
             imageSource={require("@/assets/images/pdf.png")}
             onPress={() => {
               try {
                 ExportTrip(trip.trip_id);
                 setModalVisible(false);
-              } catch (error) {
+              } catch (error: any) {
                 alert(error);
               }
             }}
           />
         );
-
       default:
-        break;
+        return null;
     }
   }
 
-  return notificationVisible ? (
-    <>
-      <Tabs.Screen
-        options={{
-          tabBarStyle: { display: "none" },
-        }}
-      />
+  if (notificationVisible) {
+    return (
+      <>
+        <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+        <Notifications
+          pending={{ friends: user.pending_friends, trips: user.pending_trips }}
+          setVisible={setNotificationVisible}
+        />
+      </>
+    );
+  }
 
-      <Notifications
-        pending={{ friends: user.pending_friends, trips: user.pending_trips }}
-        setVisible={setNotificationVisible}
-      />
-    </>
-  ) : chatVisible ? (
-    <>
-      <Tabs.Screen
-        options={{
-          tabBarStyle: { display: "none" },
-        }}
-      />
+  if (chatVisible) {
+    return (
+      <>
+        <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+        <Chat
+          setVisible={setChatVisible}
+          trip={trip}
+          handleMessage={sendMessage}
+          messages={chatMessages}
+          setMessages={setChatMessages}
+          resetMessages={clearMessages}
+        />
+      </>
+    );
+  }
 
-      <Chat
-        setVisible={setChatVisible}
-        trip={trip}
-        handleMessage={sendMessage}
-        messages={chatMessages}
-        setMessages={setChatMessages}
-        resetMessages={clearMessages}
-      />
-    </>
-  ) : (
+  if (isGenerating) {
+    return (
+      <>
+        <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+        <StrataGenerativePage />
+      </>
+    );
+  }
+
+  const hideTabs = isCreating && creationStage !== 0;
+
+  return (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
-          tabBarStyle:
-            isCreating && creationStage !== 0
-              ? { display: "none" }
-              : screenOptions.tabBarStyle,
+          tabBarStyle: hideTabs
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
         }}
       />
 
@@ -886,11 +854,11 @@ export default function MyTrips() {
             ),
             classname: !isCreating ? styles.icon : styles.bgIcon,
             hasNotification:
-              user.pending_friends.length > 0 || user.pending_trips.length > 0,
+              (user.pending_friends.length > 0 ||
+                user.pending_trips.length > 0) &&
+              !isCreating,
             onPress: !isCreating
-              ? () => {
-                  setNotificationVisible(true);
-                }
+              ? () => setNotificationVisible(true)
               : () =>
                   creationStage === 0
                     ? setisCreating(!isCreating)
@@ -902,46 +870,14 @@ export default function MyTrips() {
                   icon: <ChatBubbleIcon color={Colors.primaryDark} />,
                   classname: styles.icon,
                   hasNotification: messages.length > 0,
-                  onPress: () => {
-                    setChatVisible(true);
-                  },
+                  onPress: () => setChatVisible(true),
                 },
               ]
             : []),
         ]}
       />
 
-      {trip || isCreating ? (
-        <>
-          {isCreating ? (
-            renderCreationStage()
-          ) : (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              style={styles.scrollPage}
-              contentContainerStyle={[
-                styles.scrollView,
-                { justifyContent: "flex-start", paddingTop: 10, gap: 40 },
-              ]}
-            >
-              <StrataTab
-                tabs={tabs}
-                activeTab={currentTab}
-                onTabPress={(tabTitle) => setCurrentTab(tabTitle)}
-              />
-
-              {renderTabContent()}
-
-              <StrataModal
-                isVisible={modalVisible}
-                onClose={() => setModalVisible(false)}
-              >
-                {renderModalContent()}
-              </StrataModal>
-            </ScrollView>
-          )}
-        </>
-      ) : (
+      {!trip && !isCreating ? (
         <EmptyState
           title="No trips planned yet."
           subtitle="Start planning your next adventure or find inspiration from the community."
@@ -968,6 +904,52 @@ export default function MyTrips() {
             />,
           ]}
         />
+      ) : (
+        <>
+          {isCreating ? (
+            creationStage === 0 ? (
+              <TripCreationOptions
+                manualOnPress={() => {
+                  setisManual(true);
+                  setCreationStage(1);
+                }}
+                generateOnPress={() => {
+                  setisManual(false);
+                  setCreationStage(1);
+                }}
+              />
+            ) : (
+              <TripCreationForm
+                stage={creationStage}
+                handleSubmit={handleSubmit}
+              />
+            )
+          ) : (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.scrollPage}
+              contentContainerStyle={[
+                styles.scrollView,
+                { justifyContent: "flex-start", paddingTop: 10, gap: 40 },
+              ]}
+            >
+              <StrataTab
+                tabs={tabs}
+                activeTab={currentTab}
+                onTabPress={setCurrentTab}
+              />
+
+              {renderTabContent()}
+
+              <StrataModal
+                isVisible={modalVisible}
+                onClose={() => setModalVisible(false)}
+              >
+                {renderModalContent()}
+              </StrataModal>
+            </ScrollView>
+          )}
+        </>
       )}
     </View>
   );

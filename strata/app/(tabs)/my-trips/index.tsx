@@ -1,5 +1,5 @@
 import { ScrollView, View } from "react-native";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { router, useFocusEffect, Tabs } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { styles } from "@/styles/my-trips/styles";
@@ -43,22 +43,19 @@ export default function MyTrips() {
         user.friends?.length > 0
       ) {
         try {
-          const profiles = await getUsersData(user.friends);
-          user.friends_profiles = profiles;
+          user.friends_profiles = await getUsersData(user.friends);
         } catch (error) {
           console.error("Error:", error);
         }
       }
     };
-
     loadProfiles();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       setTrips([...user.trips]);
-
-      return async () => {
+      return () => {
         setisCreating(false);
         setisManual(true);
         setCreationStage(0);
@@ -67,88 +64,37 @@ export default function MyTrips() {
     }, []),
   );
 
-  function advanceToForm(bool: boolean) {
-    setisManual(bool);
-    setCreationStage(1);
-  }
+  const upcomingTrips = useMemo(() => {
+    return trips
+      .filter(
+        (trip) =>
+          !trip.start_date ||
+          !trip.end_date ||
+          new Date(trip.end_date) >= today,
+      )
+      .sort((a, b) => {
+        if (!a.start_date && !b.start_date) return 0;
+        if (!a.start_date) return 1;
+        if (!b.start_date) return -1;
+        return (
+          new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+        );
+      });
+  }, [trips]);
 
-  const handleCreateTrip = async (data: any) => {
-    let finalBannerUrl = data.banner;
-    let imageWasUploaded = false;
+  const pastTrips = useMemo(() => {
+    return trips
+      .filter(
+        (trip) =>
+          trip.start_date && trip.end_date && new Date(trip.end_date) < today,
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.end_date).getTime() - new Date(a.end_date).getTime(),
+      );
+  }, [trips]);
 
-    try {
-      if (data.banner && data.banner.startsWith("file://")) {
-        finalBannerUrl = await uploadImageToSupabase(data.banner, "banners");
-        imageWasUploaded = true;
-      }
-
-      const { destinations, selectedUsers, banner, ...tripCoreData } = data;
-
-      const newTripId = Crypto.randomUUID();
-
-      const createdDestinations = destinations.map((destination: string) => ({
-        destination_id: Crypto.randomUUID(),
-        trip_id: newTripId,
-        destination,
-      }));
-
-      const formattedTripData = {
-        ...tripCoreData,
-        start_date: tripCoreData.start_date
-          ? new Date(tripCoreData.start_date).toISOString()
-          : tripCoreData.start_date,
-        end_date: tripCoreData.end_date
-          ? new Date(tripCoreData.end_date).toISOString()
-          : tripCoreData.end_date,
-      };
-
-      const myChanges = {
-        trips: {
-          created: [
-            {
-              trip_id: newTripId,
-              banner: finalBannerUrl,
-              ...formattedTripData,
-            },
-          ],
-          updated: [],
-          deleted: [],
-        },
-        destinations: {
-          created: createdDestinations,
-          updated: [],
-          deleted: [],
-        },
-      };
-
-      await pushChanges(myChanges);
-
-      for (const user of selectedUsers) {
-        await inviteToTrip(newTripId, user);
-      }
-
-      user.trips.push(myChanges.trips.created[0]);
-      setTrips([...user.trips]);
-    } catch (error) {
-      console.error(error);
-      alert("Error creating trip. Please try again.");
-
-      if (imageWasUploaded && finalBannerUrl) {
-        try {
-          await deleteImageFromSupabase(finalBannerUrl, "banners");
-        } catch (cleanupError) {
-          console.error(
-            "Error during cleanup of uploaded image after failed trip creation:",
-            cleanupError,
-          );
-        }
-      }
-    }
-  };
-
-  // #TODO: add generating screen
-
-  const handleTripGeneration = async (data: any) => {
+  const processTrip = async (data: any, isAI: boolean) => {
     let finalBannerUrl = data.banner;
     let imageWasUploaded = false;
 
@@ -162,9 +108,17 @@ export default function MyTrips() {
         }
       };
 
-      const aiTask = generateTrip(data);
+      let aiResult = null;
 
-      const [_, aiResult] = await Promise.all([uploadTask(), aiTask]);
+      if (isAI) {
+        const [_, aiRes] = await Promise.all([
+          uploadTask(),
+          generateTrip(data),
+        ]);
+        aiResult = aiRes;
+      } else {
+        await uploadTask();
+      }
 
       const { destinations, selectedUsers, banner, ...tripCoreData } = data;
 
@@ -177,13 +131,11 @@ export default function MyTrips() {
       const createdLocations =
         aiResult?.locations?.map((loc: any) => {
           let safeDate = loc.scheduled_time;
-
           if (safeDate && !safeDate.includes("T")) {
             safeDate = new Date(safeDate.replace(" ", "T")).toISOString();
           } else if (safeDate) {
             safeDate = new Date(safeDate).toISOString();
           }
-
           return {
             ...loc,
             location_id: Crypto.randomUUID(),
@@ -192,23 +144,19 @@ export default function MyTrips() {
           };
         }) || [];
 
-      const formattedTripData = {
-        ...tripCoreData,
-        start_date: tripCoreData.start_date
-          ? new Date(tripCoreData.start_date).toISOString()
-          : tripCoreData.start_date,
-        end_date: tripCoreData.end_date
-          ? new Date(tripCoreData.end_date).toISOString()
-          : tripCoreData.end_date,
-      };
-
       const myChanges = {
         trips: {
           created: [
             {
               trip_id: newTripId,
               banner: finalBannerUrl,
-              ...formattedTripData,
+              ...tripCoreData,
+              start_date: tripCoreData.start_date
+                ? new Date(tripCoreData.start_date).toISOString()
+                : tripCoreData.start_date,
+              end_date: tripCoreData.end_date
+                ? new Date(tripCoreData.end_date).toISOString()
+                : tripCoreData.end_date,
             },
           ],
           updated: [],
@@ -219,20 +167,15 @@ export default function MyTrips() {
           updated: [],
           deleted: [],
         },
-        locations: {
-          created: createdLocations,
-          updated: [],
-          deleted: [],
-        },
+        locations: { created: createdLocations, updated: [], deleted: [] },
       };
 
       await pushChanges(myChanges);
 
-      if (selectedUsers && selectedUsers.length > 0) {
-        const invitePromises = selectedUsers.map((user: any) =>
-          inviteToTrip(newTripId, user),
+      if (selectedUsers?.length > 0) {
+        await Promise.all(
+          selectedUsers.map((user: any) => inviteToTrip(newTripId, user)),
         );
-        await Promise.all(invitePromises);
       }
 
       user.trips.push(myChanges.trips.created[0]);
@@ -240,15 +183,11 @@ export default function MyTrips() {
     } catch (error) {
       console.error(error);
       alert("Error creating trip. Please try again.");
-
       if (imageWasUploaded && finalBannerUrl) {
         try {
           await deleteImageFromSupabase(finalBannerUrl, "banners");
         } catch (cleanupError) {
-          console.error(
-            "Error during cleanup of uploaded image:",
-            cleanupError,
-          );
+          console.error("Error during cleanup:", cleanupError);
         }
       }
     }
@@ -257,88 +196,49 @@ export default function MyTrips() {
   async function handleSubmit(data: any) {
     if (creationStage !== 3) {
       setCreationStage(creationStage + 1);
-    } else {
-      if (isManual) {
-        await handleCreateTrip(data);
-      } else {
-        setIsGenerating(true);
-        await handleTripGeneration(data);
-      }
-
-      setisCreating(false);
-      setisManual(true);
-      setCreationStage(0);
-      setIsGenerating(false);
+      return;
     }
+
+    if (!isManual) setIsGenerating(true);
+
+    await processTrip(data, !isManual);
+
+    setisCreating(false);
+    setisManual(true);
+    setCreationStage(0);
+    setIsGenerating(false);
   }
 
-  function renderCreationStage() {
-    switch (creationStage) {
-      case 0:
-        return (
-          <TripCreationOptions
-            manualOnPress={() => advanceToForm(true)}
-            generateOnPress={() => advanceToForm(false)}
-          />
-        );
-      default:
-        return (
-          <TripCreationForm stage={creationStage} handleSubmit={handleSubmit} />
-        );
-    }
+  if (notificationVisible) {
+    return (
+      <>
+        <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+        <Notifications
+          pending={{ friends: user.pending_friends, trips: user.pending_trips }}
+          setVisible={setNotificationVisible}
+        />
+      </>
+    );
   }
 
-  const upcomingTrips = trips
-    .filter((trip) => {
-      if (!trip.start_date || !trip.end_date) return true;
+  if (isGenerating) {
+    return (
+      <>
+        <Tabs.Screen options={{ tabBarStyle: { display: "none" } }} />
+        <StrataGenerativePage />
+      </>
+    );
+  }
 
-      const endDate = new Date(trip.end_date);
-      return endDate >= today;
-    })
-    .sort((a, b) => {
-      if (!a.start_date && !b.start_date) return 0;
-      if (!a.start_date) return 1;
-      if (!b.start_date) return -1;
+  const hideTabs = isCreating && creationStage !== 0;
 
-      return (
-        new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-      );
-    });
-
-  const pastTrips = trips
-    .filter((trip) => {
-      if (!trip.start_date || !trip.end_date) return false;
-
-      const endDate = new Date(trip.end_date);
-      return endDate < today;
-    })
-    .sort((a, b) => {
-      return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
-    });
-
-  return notificationVisible ? (
-    <>
-      <Tabs.Screen
-        options={{
-          tabBarStyle: notificationVisible
-            ? { display: "none" }
-            : screenOptions.tabBarStyle,
-        }}
-      />
-
-      <Notifications
-        pending={{ friends: user.pending_friends, trips: user.pending_trips }}
-        setVisible={setNotificationVisible}
-      />
-    </>
-  ) : !isGenerating ? (
+  return (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
-          tabBarStyle:
-            isCreating && creationStage !== 0
-              ? { display: "none" }
-              : screenOptions.tabBarStyle,
+          tabBarStyle: hideTabs
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
         }}
       />
 
@@ -360,9 +260,7 @@ export default function MyTrips() {
                 user.pending_trips.length > 0) &&
               !isCreating,
             onPress: !isCreating
-              ? () => {
-                  setNotificationVisible(true);
-                }
+              ? () => setNotificationVisible(true)
               : () =>
                   creationStage === 0
                     ? setisCreating(!isCreating)
@@ -371,69 +269,7 @@ export default function MyTrips() {
         ]}
       />
 
-      {user.trips.length > 0 || isCreating ? (
-        <>
-          {isCreating ? (
-            renderCreationStage()
-          ) : (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              style={styles.scrollPage}
-              contentContainerStyle={[
-                styles.scrollView,
-                { justifyContent: "flex-start", paddingTop: 10, gap: 40 },
-              ]}
-            >
-              <StrataTab
-                tabs={tabs}
-                activeTab={currentTab}
-                onTabPress={(tabTitle) => setCurrentTab(tabTitle)}
-              />
-
-              {currentTab === "Upcoming"
-                ? upcomingTrips.map((trip) => (
-                    <TripCard
-                      key={trip.trip_id}
-                      trip={trip}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/trip/[trip_id]",
-                          params: {
-                            trip_id: trip.trip_id,
-                            origin: "my-trips",
-                          },
-                        })
-                      }
-                    />
-                  ))
-                : pastTrips.map((trip) => (
-                    <TripCard
-                      key={trip.trip_id}
-                      trip={trip}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/trip/[trip_id]",
-                          params: {
-                            trip_id: trip.trip_id,
-                            origin: "my-trips",
-                          },
-                        })
-                      }
-                    />
-                  ))}
-
-              <StrataButton
-                classname={styles.createTripButton}
-                key="create-trip"
-                title="Create Trip"
-                text="Plan your dream trip!"
-                imageSource={require("@/assets/images/plane-taking-off.png")}
-                onPress={() => setisCreating(true)}
-              />
-            </ScrollView>
-          )}
-        </>
-      ) : (
+      {user.trips.length === 0 && !isCreating ? (
         <EmptyState
           title="No trips planned yet."
           subtitle="Start planning your next adventure or find inspiration from the community."
@@ -460,19 +296,68 @@ export default function MyTrips() {
             />,
           ]}
         />
+      ) : (
+        <>
+          {isCreating ? (
+            creationStage === 0 ? (
+              <TripCreationOptions
+                manualOnPress={() => {
+                  setisManual(true);
+                  setCreationStage(1);
+                }}
+                generateOnPress={() => {
+                  setisManual(false);
+                  setCreationStage(1);
+                }}
+              />
+            ) : (
+              <TripCreationForm
+                stage={creationStage}
+                handleSubmit={handleSubmit}
+              />
+            )
+          ) : (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.scrollPage}
+              contentContainerStyle={[
+                styles.scrollView,
+                { justifyContent: "flex-start", paddingTop: 10, gap: 40 },
+              ]}
+            >
+              <StrataTab
+                tabs={tabs}
+                activeTab={currentTab}
+                onTabPress={setCurrentTab}
+              />
+
+              {(currentTab === "Upcoming" ? upcomingTrips : pastTrips).map(
+                (trip) => (
+                  <TripCard
+                    key={trip.trip_id}
+                    trip={trip}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/trip/[trip_id]",
+                        params: { trip_id: trip.trip_id, origin: "my-trips" },
+                      })
+                    }
+                  />
+                ),
+              )}
+
+              <StrataButton
+                classname={styles.createTripButton}
+                key="create-trip"
+                title="Create Trip"
+                text="Plan your dream trip!"
+                imageSource={require("@/assets/images/plane-taking-off.png")}
+                onPress={() => setisCreating(true)}
+              />
+            </ScrollView>
+          )}
+        </>
       )}
     </View>
-  ) : (
-    <>
-      <Tabs.Screen
-        options={{
-          tabBarStyle: isGenerating
-            ? { display: "none" }
-            : screenOptions.tabBarStyle,
-        }}
-      />
-
-      <StrataGenerativePage />
-    </>
   );
 }

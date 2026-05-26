@@ -122,6 +122,7 @@ export const styles = StyleSheet.create({
     left: {
         justifyContent: "space-between",
         alignItems: "flex-start",
+        maxWidth: '60%'
     },
     right: {
         justifyContent: "space-between",
@@ -130,7 +131,7 @@ export const styles = StyleSheet.create({
     },
     text: {
         ...Typography.bodyL,
-        color: Colors.primaryDark
+        color: Colors.primaryDark,
     },
     labelM: {
         ...Typography.labelM,
