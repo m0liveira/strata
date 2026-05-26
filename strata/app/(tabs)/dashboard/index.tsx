@@ -43,6 +43,7 @@ import { StrataSocialList } from "@/components/strata-social-list/StrataSocialLi
 import { PublicUser } from "@/types/models/user-model";
 import {
   getDayLabel,
+  getDiffInDays,
   getMidnight,
   getTimeUntil,
   openMapRoute,
@@ -54,6 +55,7 @@ import { Notifications } from "@/components/features/notifications/Notifications
 import { Chat } from "@/components/features/chat/Chat";
 import { generateTrip } from "@/utils/aiService";
 import { StrataGenerativePage } from "@/components/strata-generative-page/StrataGenerativePage";
+import { PlanB } from "@/components/features/planB/PlanB";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
@@ -637,7 +639,14 @@ export default function MyTrips() {
   function renderModalContent() {
     switch (currentAction) {
       case "Plan B":
-        return <Text>Plan b</Text>;
+        return (
+          <PlanB
+            days={getDiffInDays(trip?.start_date, trip?.end_date)}
+            locations={trip?.locations}
+            setTrip={setTrip}
+            onClose={setModalVisible}
+          />
+        );
       case "Shift Trip":
         return (
           <>

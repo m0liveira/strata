@@ -43,7 +43,7 @@ import { user } from "@/utils/userService";
 import { floatInputProperties } from "@/utils/input-properties";
 import { useTripSocket } from "@/hooks/useTripSocket";
 import { Chat } from "@/components/features/chat/Chat";
-import { openMapRoute } from "@/utils/generalFunctions";
+import { getDiffInDays, openMapRoute } from "@/utils/generalFunctions";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -74,19 +74,6 @@ export default function Trip() {
   const isOneMemberOnly = trip?.members?.length === 1;
 
   let isActionOnGoing = false;
-
-  const getDiffInDays = (
-    startDate: string | Date,
-    endDate: string | Date,
-  ): number => {
-    if (!startDate || !endDate) return 0;
-
-    const start = new Date(startDate).getTime();
-    const end = new Date(endDate).getTime();
-
-    const diffInMilliseconds = end - start;
-    return Math.round(diffInMilliseconds / (1000 * 60 * 60 * 24)) + 1;
-  };
 
   const fetchTrip = useCallback(async () => {
     setIsUpdated(false);

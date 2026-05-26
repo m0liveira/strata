@@ -53,3 +53,16 @@ export const openMapRoute = (locations: any[]) => {
 
     if (url) Linking.openURL(url);
 };
+
+export const getDiffInDays = (
+    startDate: string | Date,
+    endDate: string | Date,
+): number => {
+    if (!startDate || !endDate) return 0;
+
+    const start = new Date(startDate).getTime();
+    const end = new Date(endDate).getTime();
+
+    const diffInMilliseconds = end - start;
+    return Math.round(diffInMilliseconds / (1000 * 60 * 60 * 24)) + 1;
+};
