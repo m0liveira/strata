@@ -20,9 +20,12 @@ import {
 import { StrataTab } from "@/components/strata-tab/StrataTab";
 import { TripCard } from "@/components/strata-trip-card/StrataTripCard";
 import { Notifications } from "@/components/features/notifications/Notifications";
+import { generateTrip } from "@/utils/aiService";
+import { StrataGenerativePage } from "@/components/strata-generative-page/StrataGenerativePage";
 
 export default function MyTrips() {
   const [isCreating, setisCreating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isManual, setisManual] = useState(true);
   const [creationStage, setCreationStage] = useState(0);
   const [currentTab, setCurrentTab] = useState("Upcoming");
@@ -59,6 +62,7 @@ export default function MyTrips() {
         setisCreating(false);
         setisManual(true);
         setCreationStage(0);
+        setIsGenerating(false);
       };
     }, []),
   );
@@ -142,19 +146,129 @@ export default function MyTrips() {
     }
   };
 
+  // #TODO: add generating screen
+
+  const handleTripGeneration = async (data: any) => {
+    let finalBannerUrl = data.banner;
+    let imageWasUploaded = false;
+
+    try {
+      const newTripId = Crypto.randomUUID();
+
+      const uploadTask = async () => {
+        if (data.banner && data.banner.startsWith("file://")) {
+          finalBannerUrl = await uploadImageToSupabase(data.banner, "banners");
+          imageWasUploaded = true;
+        }
+      };
+
+      const aiTask = generateTrip(data);
+
+      const [_, aiResult] = await Promise.all([uploadTask(), aiTask]);
+
+      const { destinations, selectedUsers, banner, ...tripCoreData } = data;
+
+      const createdDestinations = destinations.map((destination: string) => ({
+        destination_id: Crypto.randomUUID(),
+        trip_id: newTripId,
+        destination,
+      }));
+
+      const createdLocations =
+        aiResult?.locations?.map((loc: any) => {
+          let safeDate = loc.scheduled_time;
+
+          if (safeDate && !safeDate.includes("T")) {
+            safeDate = new Date(safeDate.replace(" ", "T")).toISOString();
+          } else if (safeDate) {
+            safeDate = new Date(safeDate).toISOString();
+          }
+
+          return {
+            ...loc,
+            location_id: Crypto.randomUUID(),
+            trip_id: newTripId,
+            scheduled_time: safeDate || null,
+          };
+        }) || [];
+
+      const formattedTripData = {
+        ...tripCoreData,
+        start_date: tripCoreData.start_date
+          ? new Date(tripCoreData.start_date).toISOString()
+          : tripCoreData.start_date,
+        end_date: tripCoreData.end_date
+          ? new Date(tripCoreData.end_date).toISOString()
+          : tripCoreData.end_date,
+      };
+
+      const myChanges = {
+        trips: {
+          created: [
+            {
+              trip_id: newTripId,
+              banner: finalBannerUrl,
+              ...formattedTripData,
+            },
+          ],
+          updated: [],
+          deleted: [],
+        },
+        destinations: {
+          created: createdDestinations,
+          updated: [],
+          deleted: [],
+        },
+        locations: {
+          created: createdLocations,
+          updated: [],
+          deleted: [],
+        },
+      };
+
+      await pushChanges(myChanges);
+
+      if (selectedUsers && selectedUsers.length > 0) {
+        const invitePromises = selectedUsers.map((user: any) =>
+          inviteToTrip(newTripId, user),
+        );
+        await Promise.all(invitePromises);
+      }
+
+      user.trips.push(myChanges.trips.created[0]);
+      setTrips([...user.trips]);
+    } catch (error) {
+      console.error(error);
+      alert("Error creating trip. Please try again.");
+
+      if (imageWasUploaded && finalBannerUrl) {
+        try {
+          await deleteImageFromSupabase(finalBannerUrl, "banners");
+        } catch (cleanupError) {
+          console.error(
+            "Error during cleanup of uploaded image:",
+            cleanupError,
+          );
+        }
+      }
+    }
+  };
+
   async function handleSubmit(data: any) {
     if (creationStage !== 3) {
       setCreationStage(creationStage + 1);
     } else {
       if (isManual) {
         await handleCreateTrip(data);
-      }else{
-        
+      } else {
+        setIsGenerating(true);
+        await handleTripGeneration(data);
       }
 
       setisCreating(false);
       setisManual(true);
       setCreationStage(0);
+      setIsGenerating(false);
     }
   }
 
@@ -217,7 +331,7 @@ export default function MyTrips() {
         setVisible={setNotificationVisible}
       />
     </>
-  ) : (
+  ) : !isGenerating ? (
     <View style={styles.page}>
       <Tabs.Screen
         options={{
@@ -348,5 +462,17 @@ export default function MyTrips() {
         />
       )}
     </View>
+  ) : (
+    <>
+      <Tabs.Screen
+        options={{
+          tabBarStyle: isGenerating
+            ? { display: "none" }
+            : screenOptions.tabBarStyle,
+        }}
+      />
+
+      <StrataGenerativePage />
+    </>
   );
 }
