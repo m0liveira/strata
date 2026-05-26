@@ -112,8 +112,6 @@ export const generatePlanB = async (locations: any[], reason: string) => {
       };
     });
 
-    console.log(generatedPlan);
-
     return generatedPlan;
 
   } catch (error) {

@@ -83,10 +83,9 @@ export default function MyTrips() {
   const tabs = ["Overview", "Map", "Budget"];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
   const todayMidnight = getMidnight();
 
-  // 2. Efeitos
-  // Carrega os perfis de amigos apenas uma vez na montagem
   useEffect(() => {
     const loadProfiles = async () => {
       if (
