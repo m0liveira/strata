@@ -146,9 +146,11 @@ export default function MyTrips() {
     if (creationStage !== 3) {
       setCreationStage(creationStage + 1);
     } else {
-      // #TODO: Save trip locally first...
-
-      await handleCreateTrip(data);
+      if (isManual) {
+        await handleCreateTrip(data);
+      }else{
+        
+      }
 
       setisCreating(false);
       setisManual(true);

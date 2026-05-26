@@ -41,6 +41,7 @@ export default function RootLayout() {
         <Stack.Screen name="pages/get-started" />
         <Stack.Screen name="pages/login" />
         <Stack.Screen name="pages/register" />
+        <Stack.Screen name="pages/user-profile" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
