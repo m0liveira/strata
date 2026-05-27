@@ -117,6 +117,8 @@ export default function Profile() {
       user.friends_profiles = (user.friends_profiles || []).filter(
         ({ user_id }: { user_id: number }) => user_id !== userToRemove.user_id,
       );
+
+      setFriends(user.friends_profiles || []);
     } catch (error) {
       console.error("Error Removing friend:", error);
     }
@@ -129,6 +131,10 @@ export default function Profile() {
       user.following = (user.following || []).filter(
         (id: number) => id !== userToRemove.user_id,
       );
+
+      const following = await getUsersData(user.following);
+
+      setFollowing(following);
     } catch (error) {
       console.error("Error Removing follow:", error);
     }

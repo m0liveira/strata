@@ -12,32 +12,33 @@ export const generateTrip = async (data: any) => {
     });
 
     const prompt = `
-      You are an expert travel planner. Create a realistic daily travel itinerary based on these preferences:
-      
-      - Destinations: ${data.destinations.join(', ')}
-      - Start Date: ${data.start_date}
-      - End Date: ${data.end_date}
-      - Budget Level: ${data.budget_level}
-      - Intensity Level: ${data.intensity_level}
-      - Travel Style: ${data.travel_style}
+  You are an expert travel planner. Create a realistic daily travel itinerary based on these preferences:
+  
+  - Destinations: ${data.destinations.join(', ')}
+  ${data.start_date ? `- Start Date: ${data.start_date}\n  - End Date: ${data.end_date}` : '- Dates: Not specified yet (TBD)'}
+  - Budget Level: ${data.budget_level}
+  - Intensity Level: ${data.intensity_level}
+  - Travel Style: ${data.travel_style}
 
-      Generate appropriate spots, restaurants, and activities that match the "${data.travel_style}" style and "${data.budget_level}" budget.
+  Generate appropriate spots, restaurants, and activities that match the "${data.travel_style}" style and "${data.budget_level}" budget.
 
-      You MUST output ONLY a valid JSON object matching this exact schema:
+  ${!data.start_date ? 'CRITICAL: Since there are no specific dates, you MUST set "scheduled_time" strictly to null for ALL locations.' : ''}
+
+  You MUST output ONLY a valid JSON object matching this exact schema:
+  {
+    "trip": ${JSON.stringify(data)},
+    "locations": [
       {
-        "trip": ${JSON.stringify(data)},
-        "locations": [
-          {
-            "location_id": "",
-            "trip_id": "",
-            "name": "<Name of the specific place, activity, or restaurant>",
-            "scheduled_time": "YYYY-MM-DDTHH:MM:SSZ",
-            "day": <integer representing the day of the trip, starting at 1>,
-            "ticket_url": null
-          }
-        ]
+        "location_id": "",
+        "trip_id": "",
+        "name": "<Name of the specific place, activity, or restaurant>",
+        "scheduled_time": ${data.start_date ? '"YYYY-MM-DDTHH:MM:SSZ"' : 'null'},
+        "day": <integer representing the day of the trip, starting at 1>,
+        "ticket_url": null
       }
-    `;
+    ]
+  }
+`;
 
     const result = await model.generateContent(prompt);
 

@@ -279,7 +279,9 @@ export const Notifications = (props: NotificationProps) => {
                   <View style={styles.textContainer}>
                     <Text style={styles.handle}>
                       {trip.trip.start_date !== null
-                        ? trip.trip.start_date
+                        ? new Date(trip.trip.start_date).toLocaleDateString(
+                            "pt-PT",
+                          )
                         : "TBD"}
                     </Text>
                     <Text style={styles.name}>{trip.trip.name}</Text>

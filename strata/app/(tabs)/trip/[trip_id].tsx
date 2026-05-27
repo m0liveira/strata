@@ -75,6 +75,19 @@ export default function Trip() {
 
   let isActionOnGoing = false;
 
+  const isGroupTrip = trip?.members && trip.members.length > 1;
+
+  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
+    isGroupTrip ? trip?.trip_id : undefined,
+    user.access_token,
+    () => {
+      fetchTrip();
+    },
+    () => {
+      fetchMessages();
+    },
+  );
+
   const fetchTrip = useCallback(async () => {
     setIsUpdated(false);
 
@@ -112,19 +125,6 @@ export default function Trip() {
   useEffect(() => {
     fetchMessages();
   }, [fetchMessages]);
-
-  const isGroupTrip = trip?.members && trip.members.length > 1;
-
-  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
-    isGroupTrip ? trip?.trip_id : undefined,
-    user.access_token,
-    () => {
-      fetchTrip();
-    },
-    () => {
-      fetchMessages();
-    },
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -373,62 +373,49 @@ export default function Trip() {
 
   const handleTripDangerAction = async () => {
     if (isActionOnGoing) return;
-
     isActionOnGoing = true;
 
     try {
-      if (!isOneMemberOnly) {
-        const userExpenses = trip.expenses.filter(
-          (expense: any) => expense.user_id === user.user_id,
-        );
+      let data = {};
 
-        const data = {
+      if (isOneMemberOnly) {
+        data = {
+          trips: { created: [], updated: [], deleted: [trip_id] },
+          locations: {
+            created: [],
+            updated: [],
+            deleted: (trip?.locations || []).map((l: any) => l.location_id),
+          },
+          destinations: {
+            created: [],
+            updated: [],
+            deleted: (trip?.destinations || []).map(
+              (d: any) => d.destination_id,
+            ),
+          },
           expenses: {
             created: [],
             updated: [],
-            deleted: userExpenses,
+            deleted: (trip?.expenses || []).map((e: any) => e.expense_id),
           },
         };
+      } else {
+        const userExpenses = (trip?.expenses || []).filter(
+          (e: any) => e.user_id === user.user_id,
+        );
 
-        await Promise.all([pushChanges(data), LeaveTrip(trip_id)]);
-
-        user.trips = user.trips.filter((t: any) => t.trip_id !== trip_id);
+        data = {
+          expenses: { created: [], updated: [], deleted: userExpenses },
+        };
       }
-
-      const data = {
-        trips: {
-          created: [],
-          updated: [],
-          deleted: [trip_id],
-        },
-        locations: {
-          created: [],
-          updated: [],
-          deleted: trip.locations
-            ? trip.locations.map((l: any) => l.location_id)
-            : [],
-        },
-        destinations: {
-          created: [],
-          updated: [],
-          deleted: trip.destinations
-            ? trip.destinations.map((d: any) => d.destination_id)
-            : [],
-        },
-        expenses: {
-          created: [],
-          updated: [],
-          deleted: trip.expenses
-            ? trip.expenses.map((e: any) => e.expense_id)
-            : [],
-        },
-      };
 
       await Promise.all([pushChanges(data), LeaveTrip(trip_id)]);
 
-      user.trips = user.trips.filter((t: any) => t.trip_id !== trip_id);
+      user.trips = (user?.trips || []).filter(
+        (t: any) => t.trip_id !== trip_id,
+      );
     } catch (error) {
-      console.error(error);
+      console.error("Error handling trip danger action:", error);
     } finally {
       isActionOnGoing = false;
       router.replace("/my-trips");

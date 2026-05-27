@@ -86,6 +86,29 @@ export default function MyTrips() {
 
   const todayMidnight = getMidnight();
 
+  const isGroupTrip = trip?.members && trip.members.length > 1;
+
+  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
+    isGroupTrip ? trip?.trip_id : undefined,
+    user.access_token,
+    async () => {
+      if (trip?.trip_id) {
+        const tripData = await getTripByID(trip.trip_id);
+        setTrip(tripData);
+      }
+    },
+    (newMessage: any) => {
+      setChatMessages((prevMessages: any[]) => {
+        const exists = prevMessages.some(
+          (msg) => msg.message_id === newMessage.message_id,
+        );
+        if (exists) return prevMessages;
+
+        return [...prevMessages, newMessage];
+      });
+    },
+  );
+
   useEffect(() => {
     const loadProfiles = async () => {
       if (
@@ -160,29 +183,6 @@ export default function MyTrips() {
         setIsGenerating(false);
       };
     }, []),
-  );
-
-  const isGroupTrip = trip?.members && trip.members.length > 1;
-
-  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
-    isGroupTrip ? trip?.trip_id : undefined,
-    user.access_token,
-    async () => {
-      if (trip?.trip_id) {
-        const tripData = await getTripByID(trip.trip_id);
-        setTrip(tripData);
-      }
-    },
-    (newMessage: any) => {
-      setChatMessages((prevMessages: any[]) => {
-        const exists = prevMessages.some(
-          (msg) => msg.message_id === newMessage.message_id,
-        );
-        if (exists) return prevMessages;
-
-        return [...prevMessages, newMessage];
-      });
-    },
   );
 
   const scheduledLocations = useMemo(() => {

@@ -276,7 +276,7 @@ export const LeaveTrip = async (tripId: string) => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to invite user to trip");
+            throw new Error(errorData.message || "Failed to leave trip");
         }
 
         return await response.json();
