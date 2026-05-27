@@ -28,13 +28,13 @@ export const styles = StyleSheet.create({
     },
     icon: {
         aspectRatio: 1,
-        width: '8%',
+        width: 24,
     },
     bgIcon: {
         backgroundColor: Colors.grey200,
         borderRadius: BorderRadius.full,
         aspectRatio: 1,
-        width: '12%',
+        width: 36,
     },
     createTripButton: {
         marginBottom: 75,
@@ -69,10 +69,6 @@ export const styles = StyleSheet.create({
     qAText: {
         ...Typography.labelM,
         color: Colors.grey600,
-    },
-    ctaText: {
-        ...Typography.cta,
-        color: Colors.white,
     },
     ctaDisabled: {
         backgroundColor: Colors.grey100,
@@ -126,6 +122,7 @@ export const styles = StyleSheet.create({
     left: {
         justifyContent: "space-between",
         alignItems: "flex-start",
+        maxWidth: '60%'
     },
     right: {
         justifyContent: "space-between",
@@ -134,7 +131,7 @@ export const styles = StyleSheet.create({
     },
     text: {
         ...Typography.bodyL,
-        color: Colors.primaryDark
+        color: Colors.primaryDark,
     },
     labelM: {
         ...Typography.labelM,
@@ -162,5 +159,5 @@ export const styles = StyleSheet.create({
     options: {
         ...Typography.bodyM,
         color: Colors.grey400,
-    }
+    },
 });

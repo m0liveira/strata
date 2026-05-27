@@ -13,7 +13,11 @@ import { styles } from "./styles";
 import { Colors } from "@/constants/global-styles";
 import { ArrowIcon, PinIcon } from "@/components/icons";
 import { Trip } from "@/types/models/trip-model";
-import { getDayLabel, getMidnight, getTimeUntil } from "@/utils/generalFunctions";
+import {
+  getDayLabel,
+  getMidnight,
+  getTimeUntil,
+} from "@/utils/generalFunctions";
 
 type TripOverviewCardProps = {
   classname?: StyleProp<ViewStyle>;
@@ -26,9 +30,14 @@ const getLocationDate = (loc: any, tripStartDate: string) => {
   if (loc.scheduled_time && loc.scheduled_time.includes("T")) {
     return new Date(loc.scheduled_time);
   }
-  const baseDate = new Date(tripStartDate);
-  baseDate.setDate(baseDate.getDate() + ((loc.day || 1) - 1));
-  return baseDate;
+
+  if (tripStartDate) {
+    const baseDate = new Date(tripStartDate);
+    baseDate.setDate(baseDate.getDate() + ((loc.day || 1) - 1));
+    return baseDate;
+  }
+
+  return new Date();
 };
 
 export function StrataTripOverviewCard({
@@ -49,24 +58,37 @@ export function StrataTripOverviewCard({
     : require("@/assets/images/default-banner.png");
 
   const now = Date.now();
+
   const upcomingLocations = (locations || [])
     .map((loc) => ({
       ...loc,
-      parsedDate: getLocationDate(loc, trip.start_date),
+      parsedDate: getLocationDate(loc, trip?.start_date),
     }))
     .filter((loc) => {
+      if (!trip?.start_date) {
+        return true;
+      }
+
+      if (!loc.parsedDate || isNaN(loc.parsedDate.getTime())) {
+        return true;
+      }
+
       if (loc.scheduled_time) {
         return loc.parsedDate.getTime() >= now;
       }
+
       const endOfDay = new Date(loc.parsedDate);
       endOfDay.setHours(23, 59, 59, 999);
       return endOfDay.getTime() >= now;
     })
     .sort((a, b) => {
       if (a.day !== b.day) return (a.day || 1) - (b.day || 1);
+
       if (!a.scheduled_time && !b.scheduled_time) return 0;
+
       if (!a.scheduled_time) return 1;
       if (!b.scheduled_time) return -1;
+
       return a.parsedDate.getTime() - b.parsedDate.getTime();
     });
 
@@ -87,38 +109,47 @@ export function StrataTripOverviewCard({
       );
     }
 
-    const locationsToRender = upcomingLocations.slice(
-      0,
-      isExpanded ? 10 : 3,
-    );
+    const locationsToRender = upcomingLocations.slice(0, isExpanded ? 10 : 3);
 
     return (
       <>
-        {locationsToRender.map((loc) => (
-          <View key={loc.location_id} style={styles.location}>
-            <View style={styles.left}>
-              <Text style={styles.label}>
-                {getDayLabel(loc.parsedDate, todayMidnight)}
-              </Text>
-              <Text style={styles.text}>{loc.name}</Text>
-            </View>
+        {locationsToRender.map((loc) => {
+          const isScheduled = Boolean(trip?.start_date && loc.scheduled_time);
 
-            <View style={styles.right}>
-              <Text style={styles.label}>
-                {loc.scheduled_time
-                  ? loc.parsedDate.toLocaleTimeString("pt-PT", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: "UTC",
-                    })
-                  : "TBD"}
-              </Text>
-              <Text style={styles.labelM}>
-                {getTimeUntil(loc.scheduled_time)}
-              </Text>
+          return (
+            <View key={loc.location_id} style={styles.location}>
+              <View style={styles.left}>
+                <Text style={styles.label}>
+                  {isScheduled
+                    ? getDayLabel(loc.parsedDate, todayMidnight)
+                    : `Day ${loc.day || 1}`}
+                </Text>
+
+                <Text numberOfLines={1} style={styles.text}>
+                  {loc.name}
+                </Text>
+              </View>
+
+              <View style={styles.right}>
+                <Text style={styles.label}>
+                  {isScheduled
+                    ? loc.parsedDate.toLocaleTimeString("pt-PT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: "UTC",
+                      })
+                    : "TBD"}
+                </Text>
+
+                {isScheduled && (
+                  <Text style={styles.labelM}>
+                    {getTimeUntil(loc.scheduled_time)}
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </>
     );
   };

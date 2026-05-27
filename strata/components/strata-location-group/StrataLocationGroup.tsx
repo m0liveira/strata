@@ -8,6 +8,8 @@ import { Colors } from "@/constants/global-styles";
 
 type LocationGroupProps = {
   classname?: StyleProp<ViewStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
+  iconGroupStyle?: StyleProp<ViewStyle>;
   locations: Location[];
   origin?: string;
   onPress?: (id: string | number) => void;
@@ -27,16 +29,18 @@ export function StrataLocationGroup(props: LocationGroupProps) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      style={styles.page}
+      style={[styles.page, props.classname]}
       contentContainerStyle={[styles.scrollContent]}
     >
-      <View style={styles.iconGroup}>
+      <View style={[styles.iconGroup, props.iconGroupStyle]}>
         <PinIcon color={Colors.grey400} classname={styles.icon} />
 
         <View style={styles.bar}></View>
       </View>
 
-      <View style={styles.container}>{renderLocations()}</View>
+      <View style={[styles.container, props.containerStyle]}>
+        {renderLocations()}
+      </View>
     </ScrollView>
   );
 }

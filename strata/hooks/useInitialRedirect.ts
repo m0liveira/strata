@@ -44,7 +44,6 @@ export const useInitialRedirect = () => {
 
                 router.replace("/(tabs)/dashboard");
             } catch (error) {
-                console.error("Redirection error:", error);
                 // TODO: Redirect to error page or show a toast notification here...
             } finally {
                 // TODO: Hide splash screen here...

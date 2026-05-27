@@ -36,9 +36,12 @@ export default function Login() {
   const [toastType, setToastType] = useState<"error" | "success">("error");
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  function displayToastNotification(response: string, type?: string) {
+  function displayToastNotification(
+    response: string,
+    type: "error" | "success" = "error",
+  ) {
     setResponse(response);
-    if (type !== null) setToastType("success");
+    setToastType(type);
     setIsVisible(true);
   }
 
@@ -49,21 +52,17 @@ export default function Login() {
       const result = await loginUser(form);
       user.access_token = result.access_token;
 
-      try {
-        const userData = await getUserData();
-        Object.assign(user, userData);
+      const userData = await getUserData();
+      Object.assign(user, userData);
 
-        displayToastNotification("Logged in successfully!", "success");
+      displayToastNotification("Logged in successfully!", "success");
 
-        await SecureStore.setItemAsync("strata_user_token", user.access_token);
+      await SecureStore.setItemAsync("strata_user_token", user.access_token);
 
-        animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
-      } catch (err: any) {
-        displayToastNotification(err.message);
-        setIsLoading(false);
-      }
+      animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
     } catch (error: any) {
       displayToastNotification(error.message);
+    } finally {
       setIsLoading(false);
     }
   }

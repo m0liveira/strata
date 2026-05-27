@@ -92,11 +92,11 @@ export const Chat = (props: ChatProps) => {
   const handleSendMessage = () => {
     if (message.trim() === "") return;
 
-    props.handleMessage(message);
+    const textToSend = message.trim();
+
+    props.handleMessage(textToSend);
 
     setMessage("");
-
-    props.setMessages((prevMessages: any) => [...prevMessages, message]);
   };
 
   const getMemberWhoSentMessage = (id: number) => {

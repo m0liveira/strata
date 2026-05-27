@@ -13,7 +13,6 @@ import { Colors, Typography } from "@/constants/global-styles";
 import { useState, useEffect } from "react";
 import { logout, user } from "@/utils/userService";
 import { StrataTab } from "@/components/strata-tab/StrataTab";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   declineFriendRequest,
   getTripByID,
@@ -29,6 +28,12 @@ import { searchInputProperties } from "@/utils/input-properties";
 import { StrataModal } from "@/components/strata-modal/StrataModal";
 import { Notifications } from "@/components/features/notifications/Notifications";
 import { screenOptions } from "../_layout";
+import {
+  getDaysAbroad,
+  getSharedTripsData,
+  getTravelBuddies,
+  getWorldCompletion,
+} from "@/utils/profileFunctions";
 
 export default function Profile() {
   const [currentTab, setCurrentTab] = useState("Stats");
@@ -50,121 +55,6 @@ export default function Profile() {
     return isOnlineUrl
       ? { uri: photoUrl }
       : require("@/assets/images/default-avatar.png");
-  };
-
-  const getWorldCompletion = async (tripsData: any[]) => {
-    try {
-      const cachedCountriesData = await AsyncStorage.getItem("countries_data");
-
-      const countries = cachedCountriesData
-        ? JSON.parse(cachedCountriesData)
-        : [];
-
-      const totalCountries = countries.length > 0 ? countries.length : 195;
-
-      const visitedCountries = new Set();
-
-      tripsData.forEach((trip) => {
-        if (trip.destinations && Array.isArray(trip.destinations)) {
-          trip.destinations.forEach((dest: any) => {
-            const destName =
-              typeof dest === "string" ? dest : dest?.destination;
-
-            if (destName) {
-              const destLower = destName.toLowerCase();
-
-              const matchedCountry = countries.find(
-                (c: any) =>
-                  c.country.toLowerCase() === destLower ||
-                  (c.cities &&
-                    c.cities.some(
-                      (city: string) => city.toLowerCase() === destLower,
-                    )),
-              );
-
-              if (matchedCountry) {
-                visitedCountries.add(matchedCountry.iso3);
-              }
-            }
-          });
-        }
-      });
-
-      const percentage = (visitedCountries.size / totalCountries) * 100;
-      return parseFloat(percentage.toFixed(2));
-    } catch (error) {
-      console.error("Error calculating world completion:", error);
-      return 0;
-    }
-  };
-
-  const getDaysAbroad = () => {
-    let totalDays = 0;
-
-    trips.forEach((trip) => {
-      if (trip.start_date && trip.end_date) {
-        const start = new Date(trip.start_date).getTime();
-        const end = new Date(trip.end_date).getTime();
-
-        const diffInDays =
-          Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-
-        if (diffInDays > 0) {
-          totalDays += diffInDays;
-        }
-      }
-    });
-
-    return totalDays;
-  };
-
-  const getTravelBuddies = () => {
-    const buddiesMap = new Map();
-
-    trips.forEach((trip) => {
-      if (trip.members && Array.isArray(trip.members)) {
-        trip.members.forEach((member: any) => {
-          const buddy = member.user;
-
-          if (buddy && buddy.username !== user.username) {
-            if (buddiesMap.has(buddy.username)) {
-              buddiesMap.get(buddy.username).tripsShared += 1;
-            } else {
-              buddiesMap.set(buddy.username, {
-                ...buddy,
-                tripsShared: 1,
-              });
-            }
-          }
-        });
-      }
-    });
-
-    return Array.from(buddiesMap.values())
-      .sort((a, b) => b.tripsShared - a.tripsShared)
-      .slice(0, 4);
-  };
-
-  const getSharedTripsData = () => {
-    let totalShared: number = 0;
-    let totalRating: number = 0.0;
-    let sharedTrips: any[] = [];
-
-    trips.forEach((trip) => {
-      if (trip.visibility.toLowerCase() !== "private") {
-        totalShared += 1;
-        sharedTrips.push(trip);
-
-        if (trip.rating) {
-          totalRating += trip.rating;
-        }
-      }
-    });
-
-    let averageRating =
-      totalShared > 0 ? Math.min(totalRating / totalShared, 5) : 0;
-
-    return { totalShared, averageRating, sharedTrips };
   };
 
   useEffect(() => {
@@ -227,6 +117,8 @@ export default function Profile() {
       user.friends_profiles = (user.friends_profiles || []).filter(
         ({ user_id }: { user_id: number }) => user_id !== userToRemove.user_id,
       );
+
+      setFriends(user.friends_profiles || []);
     } catch (error) {
       console.error("Error Removing friend:", error);
     }
@@ -239,6 +131,10 @@ export default function Profile() {
       user.following = (user.following || []).filter(
         (id: number) => id !== userToRemove.user_id,
       );
+
+      const following = await getUsersData(user.following);
+
+      setFollowing(following);
     } catch (error) {
       console.error("Error Removing follow:", error);
     }
@@ -293,10 +189,10 @@ export default function Profile() {
             {statCard({
               image: require("@/assets/images/calendar.png"),
               title: "Days Abroad",
-              text: `${getDaysAbroad()}`,
+              text: `${getDaysAbroad(trips)}`,
             })}
 
-            <View style={[styles.card, { width: "100%" }]}>
+            <View style={[styles.card, { width: "100%", flex: 0 }]}>
               <Image
                 source={require("@/assets/images/friends.png")}
                 style={styles.image}
@@ -305,29 +201,31 @@ export default function Profile() {
 
               <View style={styles.cardTextContainer}>
                 <Text style={styles.title}>Travel Buddies</Text>
-                {getTravelBuddies().length === 0 ? (
+                {getTravelBuddies(trips).length === 0 ? (
                   <Text style={styles.text}>You are a solo traveler!</Text>
                 ) : (
-                  <>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
                     <Image
-                      source={setUserImageSource(getTravelBuddies()[0].photo)}
+                      source={setUserImageSource(
+                        getTravelBuddies(trips)[0].photo,
+                      )}
                       style={[
                         styles.avatar,
-                        { width: 24, height: 24, marginRight: 10 },
+                        { width: 20, height: 20, marginRight: 10 },
                       ]}
                       resizeMode="contain"
                     />
 
                     <Text style={styles.text}>
-                      {getTravelBuddies()[0].username}
+                      {getTravelBuddies(trips)[0].username}
                     </Text>
-                  </>
+                  </View>
                 )}
               </View>
 
-              {getTravelBuddies().length === 0 && (
+              {getTravelBuddies(trips).length === 0 && (
                 <View style={styles.cardTextContainer}>
-                  {getTravelBuddies().map((buddy: any) => (
+                  {getTravelBuddies(trips).map((buddy: any) => (
                     <>
                       <Image
                         source={setUserImageSource(buddy.photo)}
@@ -350,13 +248,13 @@ export default function Profile() {
             {statCard({
               image: require("@/assets/images/shared.png"),
               title: "Shared Trips",
-              text: `${getSharedTripsData().totalShared}`,
+              text: `${getSharedTripsData(trips).totalShared}`,
             })}
 
             {statCard({
               image: require("@/assets/images/star.png"),
               title: "Average Rating",
-              text: `${getSharedTripsData().averageRating.toFixed(1)} / 5`,
+              text: `${getSharedTripsData(trips).averageRating.toFixed(1)} / 5`,
             })}
           </View>
         );
@@ -415,6 +313,15 @@ export default function Profile() {
                   onIconPress={() => {
                     confirmAction("friend", searchedUser);
                   }}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/pages/user-profile/[user_id]",
+                      params: {
+                        user_id: searchedUser.user_id,
+                        origin: "profile",
+                      },
+                    })
+                  }
                 />
               )}
 
@@ -445,6 +352,15 @@ export default function Profile() {
                     onIconPress={() => {
                       confirmAction("friend", friend);
                     }}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/pages/user-profile/[user_id]",
+                        params: {
+                          user_id: friend.user_id,
+                          origin: "profile",
+                        },
+                      })
+                    }
                   />
                 ))
               )}
@@ -472,6 +388,15 @@ export default function Profile() {
                     onIconPress={() => {
                       confirmAction("follow", follow);
                     }}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/pages/user-profile/[user_id]",
+                        params: {
+                          user_id: follow.user_id,
+                          origin: "profile",
+                        },
+                      })
+                    }
                   />
                 ))
               )}
@@ -488,15 +413,15 @@ export default function Profile() {
               { justifyContent: "flex-start", paddingTop: 40, gap: 40 },
             ]}
           >
-            {getSharedTripsData().sharedTrips.length === 0 ? (
+            {getSharedTripsData(trips).sharedTrips.length === 0 ? (
               <Text style={styles.text}>
                 No shared trips yet. Time to share!
               </Text>
             ) : (
-              getSharedTripsData().sharedTrips.map(
+              getSharedTripsData(trips).sharedTrips.map(
                 (trip: any, index: number) => {
                   const isLast =
-                    index === getSharedTripsData().sharedTrips.length - 1;
+                    index === getSharedTripsData(trips).sharedTrips.length - 1;
 
                   return (
                     <TripCard
@@ -559,8 +484,6 @@ export default function Profile() {
       ],
     );
   };
-
-  // #TODO: Go to users profiles
 
   return notificationVisible ? (
     <>

@@ -52,32 +52,21 @@ export default function Register() {
     try {
       const result = await registerUser(form);
 
-      try {
-        const res = await loginUser({ username, password });
-        user.access_token = res.access_token;
+      const res = await loginUser({ identifier: username, password });
+      user.access_token = res.access_token;
 
-        try {
-          const userData = await getUserData();
-          Object.assign(user, userData);
+      const userData = await getUserData();
+      Object.assign(user, userData);
 
-          displayToastNotification(result.message, "success");
+      displayToastNotification(result.message, "success");
 
-          await SecureStore.setItemAsync(
-            "strata_user_token",
-            user.access_token,
-          );
+      await SecureStore.setItemAsync("strata_user_token", user.access_token);
 
-          animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
-        } catch (err: any) {
-          displayToastNotification(err.message);
-          setIsLoading(false);
-        }
-      } catch (error: any) {
-        displayToastNotification(error.message);
-        setIsLoading(false);
-      }
+      animateAndNavigate(() => router.replace("/(tabs)/dashboard"));
     } catch (error: any) {
+      console.error(error);
       displayToastNotification(error.message);
+    } finally {
       setIsLoading(false);
     }
   }

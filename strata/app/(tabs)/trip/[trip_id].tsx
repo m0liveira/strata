@@ -43,6 +43,7 @@ import { user } from "@/utils/userService";
 import { floatInputProperties } from "@/utils/input-properties";
 import { useTripSocket } from "@/hooks/useTripSocket";
 import { Chat } from "@/components/features/chat/Chat";
+import { getDiffInDays, openMapRoute } from "@/utils/generalFunctions";
 
 export default function Trip() {
   const [trip, setTrip] = useState<any>(null);
@@ -74,18 +75,18 @@ export default function Trip() {
 
   let isActionOnGoing = false;
 
-  const getDiffInDays = (
-    startDate: string | Date,
-    endDate: string | Date,
-  ): number => {
-    if (!startDate || !endDate) return 0;
+  const isGroupTrip = trip?.members && trip.members.length > 1;
 
-    const start = new Date(startDate).getTime();
-    const end = new Date(endDate).getTime();
-
-    const diffInMilliseconds = end - start;
-    return Math.round(diffInMilliseconds / (1000 * 60 * 60 * 24)) + 1;
-  };
+  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
+    isGroupTrip ? trip?.trip_id : undefined,
+    user.access_token,
+    () => {
+      fetchTrip();
+    },
+    () => {
+      fetchMessages();
+    },
+  );
 
   const fetchTrip = useCallback(async () => {
     setIsUpdated(false);
@@ -110,23 +111,20 @@ export default function Trip() {
       setTabs(["Map", "Itinerary"]);
       setCurrentTab("Itinerary");
     }
-
-    setChatMessages(await getChatMessages(trip_id));
   }, [origin, trip_id]);
+
+  const fetchMessages = useCallback(async () => {
+    const messages = await getChatMessages(trip_id);
+    setChatMessages(messages);
+  }, [trip_id]);
 
   useEffect(() => {
     fetchTrip();
-  }, [fetchTrip, isUpdated, chatMessages]);
+  }, [fetchTrip, isUpdated]);
 
-  const isGroupTrip = trip?.members && trip.members.length > 1;
-
-  const { isConnected, messages, sendMessage, clearMessages } = useTripSocket(
-    isGroupTrip ? trip?.trip_id : undefined,
-    user.access_token,
-    () => {
-      fetchTrip();
-    },
-  );
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   useFocusEffect(
     useCallback(() => {
@@ -375,62 +373,49 @@ export default function Trip() {
 
   const handleTripDangerAction = async () => {
     if (isActionOnGoing) return;
-
     isActionOnGoing = true;
 
     try {
-      if (!isOneMemberOnly) {
-        const userExpenses = trip.expenses.filter(
-          (expense: any) => expense.user_id === user.user_id,
-        );
+      let data = {};
 
-        const data = {
+      if (isOneMemberOnly) {
+        data = {
+          trips: { created: [], updated: [], deleted: [trip_id] },
+          locations: {
+            created: [],
+            updated: [],
+            deleted: (trip?.locations || []).map((l: any) => l.location_id),
+          },
+          destinations: {
+            created: [],
+            updated: [],
+            deleted: (trip?.destinations || []).map(
+              (d: any) => d.destination_id,
+            ),
+          },
           expenses: {
             created: [],
             updated: [],
-            deleted: userExpenses,
+            deleted: (trip?.expenses || []).map((e: any) => e.expense_id),
           },
         };
+      } else {
+        const userExpenses = (trip?.expenses || []).filter(
+          (e: any) => e.user_id === user.user_id,
+        );
 
-        await Promise.all([pushChanges(data), LeaveTrip(trip_id)]);
-
-        user.trips = user.trips.filter((t: any) => t.trip_id !== trip_id);
+        data = {
+          expenses: { created: [], updated: [], deleted: userExpenses },
+        };
       }
-
-      const data = {
-        trips: {
-          created: [],
-          updated: [],
-          deleted: [trip_id],
-        },
-        locations: {
-          created: [],
-          updated: [],
-          deleted: trip.locations
-            ? trip.locations.map((l: any) => l.location_id)
-            : [],
-        },
-        destinations: {
-          created: [],
-          updated: [],
-          deleted: trip.destinations
-            ? trip.destinations.map((d: any) => d.destination_id)
-            : [],
-        },
-        expenses: {
-          created: [],
-          updated: [],
-          deleted: trip.expenses
-            ? trip.expenses.map((e: any) => e.expense_id)
-            : [],
-        },
-      };
 
       await Promise.all([pushChanges(data), LeaveTrip(trip_id)]);
 
-      user.trips = user.trips.filter((t: any) => t.trip_id !== trip_id);
+      user.trips = (user?.trips || []).filter(
+        (t: any) => t.trip_id !== trip_id,
+      );
     } catch (error) {
-      console.error(error);
+      console.error("Error handling trip danger action:", error);
     } finally {
       isActionOnGoing = false;
       router.replace("/my-trips");
@@ -742,9 +727,21 @@ export default function Trip() {
   };
 
   function renderTabContent() {
-    // #TODO: Add real map and itinerary content here. For now, just placeholders.
     if (currentTab === "Map") {
-      return <Text>Hello World</Text>;
+      return (
+        <View style={styles.mapContainer}>
+          <Text style={styles.mapsText}>
+            View your complete trip itinerary directly on your native maps app.
+          </Text>
+
+          <Pressable
+            style={styles.mapsButton}
+            onPress={() => openMapRoute(trip?.locations || [])}
+          >
+            <Text style={styles.ctaText}>Open Route in Maps</Text>
+          </Pressable>
+        </View>
+      );
     }
 
     const locations = trip?.locations || [];
@@ -1020,7 +1017,7 @@ export default function Trip() {
                       : setisCreating(true)
                   }
                 >
-                  <Text style={styles.optionsText}>
+                  <Text style={styles.optionsText} numberOfLines={1}>
                     {!selectedLocation
                       ? `Edit "${trip?.name || "Trip"}"`
                       : `Edit "${selectedLocation.name}"`}
@@ -1031,7 +1028,7 @@ export default function Trip() {
                   style={styles.dangerAction}
                   onPress={confirmDangerAction}
                 >
-                  <Text style={styles.dangerText}>
+                  <Text style={styles.dangerText} numberOfLines={1}>
                     {!selectedLocation
                       ? isOneMemberOnly
                         ? `Delete "${trip?.name || "Trip"}"`

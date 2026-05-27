@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { Colors, BorderRadius, Typography } from "@/constants/global-styles";
+import { Colors, BorderRadius, Typography, CommonStyles } from "@/constants/global-styles";
 
 export const styles = StyleSheet.create({
     card: {
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
         backgroundColor: Colors.white70,
         borderRadius: BorderRadius.full,
         aspectRatio: 1,
-        width: '12%',
+        width: 32,
         transform: [{ rotate: '180deg' }],
     },
     locationContainer: {
@@ -119,6 +119,7 @@ export const styles = StyleSheet.create({
     left: {
         justifyContent: "space-between",
         alignItems: "flex-start",
+        maxWidth: '69%',
     },
     right: {
         justifyContent: "space-between",

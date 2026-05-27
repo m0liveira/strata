@@ -149,8 +149,8 @@ export const CommonStyles = StyleSheet.create({
   },
   glow: {
     position: "absolute",
-    top: '15%',
-    left: '20%',
+    top: 35,
+    left: 60,
     zIndex: 0,
     filter: 'blur(25px)',
   },
@@ -164,6 +164,28 @@ export const CommonStyles = StyleSheet.create({
     marginTop: 70,
     marginBottom: 50,
     overflow: 'hidden',
+  },
+  mapContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    marginTop: 40,
+  },
+  mapsText: {
+    ...Typography.bodyM,
+    textAlign: "center",
+    color: Colors.primaryDark,
+    marginBottom: 24,
+  },
+  mapsButton: {
+    backgroundColor: Colors.coral500,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: BorderRadius.md,
+  },
+  ctaText: {
+    ...Typography.cta,
+    color: Colors.white,
   },
   visualizer: {
     borderWidth: 1,
